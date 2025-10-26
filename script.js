@@ -1,217 +1,319 @@
-const promptInput = document.getElementById('promptInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const helper = document.getElementById('helper');
-const feedback = document.getElementById('feedback');
-const analysisList = document.getElementById('analysisList');
-const tipsList = document.getElementById('tips');
-const suggestionBox = document.getElementById('suggestion');
-const aiCommentBox = document.getElementById('aiComment');
-const scoreValue = document.getElementById('scoreValue');
-const scoreLabel = document.getElementById('scoreLabel');
-const progressBar = document.getElementById('progressBar');
+const analysisForm = document.getElementById('analysisForm');
+const eventDateTimeInput = document.getElementById('eventDateTime');
+const eventLatInput = document.getElementById('eventLat');
+const eventLonInput = document.getElementById('eventLon');
+const timeToleranceInput = document.getElementById('timeTolerance');
+const distanceToleranceInput = document.getElementById('distanceTolerance');
+const speedEquivalentInput = document.getElementById('speedEquivalent');
+const htsDataInput = document.getElementById('htsData');
+const formError = document.getElementById('formError');
 
-const actionVerbs = [
-  'açıkla', 'analiz', 'karşılaştır', 'listele', 'özetle', 'tasarla', 'üret', 'oluştur',
-  'araştır', 'planla', 'öner', 'değerlendir', 'hesapla', 'tasnif et', 'yorumla', 'bul'
-];
+const resultsSection = document.getElementById('results');
+const emptyState = document.getElementById('emptyState');
+const summaryCard = document.getElementById('summaryCard');
+const statsBox = document.getElementById('stats');
+const statsList = document.getElementById('statsList');
+const tableWrapper = document.getElementById('tableWrapper');
+const matchTableBody = document.querySelector('#matchTable tbody');
 
-const contextWords = [
-  'için', 'hakkında', 'üzerine', 'adımlar', 'detaylı', 'özgün', 'örnek', 'adım adım',
-  'nasıl', 'neden', 'amacı', 'bağlam', 'senaryo', 'hedef'
-];
+analysisForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  clearFeedback();
 
-const outputHints = ['madde', 'liste', 'tablo', 'plan', 'özet', 'öneri', 'ipucu', 'ipuçları'];
+  const eventDateTime = parseDateTimeInput(eventDateTimeInput.value);
+  if (!eventDateTime) {
+    return setError('Lütfen geçerli bir olay tarih ve saat bilgisi girin.');
+  }
 
-function resetState() {
-  promptInput.classList.remove('error');
-  helper.classList.remove('error');
-  helper.textContent = 'Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.';
+  const latitude = parseNumber(eventLatInput.value);
+  const longitude = parseNumber(eventLonInput.value);
+  if (latitude === null || longitude === null) {
+    return setError('Enlem ve boylam değerlerini ondalık formatta girin.');
+  }
+
+  const rawData = htsDataInput.value.trim();
+  if (!rawData) {
+    return setError('HTS verisi boş olamaz. En azından bir satır veri girin.');
+  }
+
+  const records = parseHTSData(rawData);
+  if (!records.length) {
+    return setError('Geçerli satır bulunamadı. Başlık adlarını ve tarih/konum formatını kontrol edin.');
+  }
+
+  const speedEquivalent = Math.max(0, parseNumber(speedEquivalentInput.value) ?? 15);
+  const timeToleranceMinutes = Math.max(0, parseNumber(timeToleranceInput.value) ?? 0);
+  const distanceToleranceMeters = Math.max(0, parseNumber(distanceToleranceInput.value) ?? 0);
+
+  const matches = records
+    .map((record) => enrichRecord(record, { latitude, longitude, eventDateTime, speedEquivalent }))
+    .filter((record) => Number.isFinite(record.score))
+    .sort((a, b) => a.score - b.score);
+
+  if (!matches.length) {
+    return setError('Tüm satırlar hatalı görünüyor. Koordinatların ondalık, tarihin tanınabilir olduğundan emin olun.');
+  }
+
+  renderSummary(matches[0], eventDateTime, speedEquivalent);
+  renderStats(matches, { timeToleranceMinutes, distanceToleranceMeters });
+  renderTable(matches.slice(0, 5));
+  showResults();
+});
+
+function clearFeedback() {
+  formError.textContent = '';
+  formError.classList.remove('visible');
+  summaryCard.classList.add('hidden');
+  statsBox.classList.add('hidden');
+  tableWrapper.classList.add('hidden');
 }
 
 function setError(message) {
-  promptInput.classList.add('error');
-  helper.classList.add('error');
-  helper.textContent = message;
-  feedback.classList.add('hidden');
+  formError.textContent = message;
+  formError.classList.add('visible');
+  resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function analysePrompt(prompt) {
-  const cleanPrompt = prompt.trim();
-  const words = cleanPrompt.split(/\s+/).filter(Boolean);
-  const wordCount = cleanPrompt ? words.length : 0;
+function showResults() {
+  emptyState.classList.add('hidden');
+  summaryCard.classList.remove('hidden');
+  statsBox.classList.remove('hidden');
+  tableWrapper.classList.remove('hidden');
+}
 
-  if (wordCount < 2) {
-    return { valid: false, error: 'Promptun çok kısa. En az 2 kelime kullanmayı dene.' };
+function parseNumber(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  const normalized = String(value).replace(',', '.');
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseDateTimeInput(value) {
+  if (!value) return null;
+  const direct = new Date(value);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct;
+  }
+  return null;
+}
+
+function parseHTSData(text) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) {
+    return [];
   }
 
-  if (wordCount > 10) {
-    return { valid: false, error: 'Promptun çok uzun. 10 kelimeyi geçmeyecek şekilde sadeleştir.' };
+  const headerLine = lines[0];
+  const delimiter = detectDelimiter(headerLine);
+  const headers = headerLine.split(delimiter).map((column) => column.trim().toLowerCase());
+
+  const timeIndex = headers.findIndex((header) => /tarih|timestamp|datetime|zaman/.test(header));
+  const latIndex = headers.findIndex((header) => /enlem|lat/i.test(header));
+  const lonIndex = headers.findIndex((header) => /boylam|lon|lng/i.test(header));
+  const cellIndex = headers.findIndex((header) => /(cid|cell|lac|ci)/i.test(header));
+  const phoneIndex = headers.findIndex((header) => /(hat|msisdn|numara|imei)/i.test(header));
+
+  if (timeIndex === -1 || latIndex === -1 || lonIndex === -1) {
+    return [];
   }
 
-  let score = 50;
-  const analysis = [];
-  const tips = [];
+  const parsedRecords = [];
 
-  const hasQuestionMark = /\?/.test(cleanPrompt);
-  const hasContext = contextWords.some((word) => cleanPrompt.toLowerCase().includes(word));
-  const hasActionVerb = actionVerbs.some((verb) => cleanPrompt.toLowerCase().includes(verb));
-  const hasOutputHint = outputHints.some((hint) => cleanPrompt.toLowerCase().includes(hint));
-  const hasWho = /(öğrenci|uzman|çocuk|lise|uzaya|öğretmen|mühendis|doktor)/i.test(cleanPrompt);
-  const hasPrecision = /(tarihini|sayısını|karşılaştır|adım adım|detaylı|örnek)/i.test(cleanPrompt);
+  for (let i = 1; i < lines.length; i += 1) {
+    const parts = lines[i].split(delimiter).map((part) => part.trim());
+    if (parts.length < headers.length) {
+      continue;
+    }
 
-  const idealWordBonus = Math.max(0, 18 - Math.abs(6 - wordCount) * 4);
-  score += idealWordBonus;
+    const timestamp = parseFlexibleDate(parts[timeIndex]);
+    const lat = parseNumber(parts[latIndex]);
+    const lon = parseNumber(parts[lonIndex]);
 
-  analysis.push(`Kelime sayısı ${wordCount}. 5-8 arası jüriyi en çok etkileyen aralık.`);
+    if (!timestamp || lat === null || lon === null) {
+      continue;
+    }
 
-  if (hasActionVerb) {
-    score += 10;
-    analysis.push('Yapay zekâya net bir görev veriyorsun. Bu harika!');
-  } else {
-    tips.push('Cümleye bir eylem fiili ekle: "açıkla", "özetle", "listele" gibi.');
-    analysis.push('Promptunda doğrudan eylem çağrısı eksik, görev netliği düşüyor.');
+    parsedRecords.push({
+      timestamp,
+      latitude: lat,
+      longitude: lon,
+      phone: phoneIndex > -1 ? parts[phoneIndex] : '—',
+      cell: cellIndex > -1 ? parts[cellIndex] : '—',
+      rawIndex: i,
+    });
   }
 
-  if (hasContext) {
-    score += 10;
-    analysis.push('Bağlam eklemişsin, yapay zekâ konuyu daha iyi kavrar.');
-  } else {
-    tips.push('Sorunun neden önemli olduğunu kısaca belirt. "... için" kalıbı çok işe yarar.');
-    analysis.push('Bağlam zayıf. Bir hedef, kitle ya da amaç eklemek promptu güçlendirir.');
+  return parsedRecords;
+}
+
+function detectDelimiter(line) {
+  if (line.includes('\t')) return '\t';
+  if ((line.match(/;/g) || []).length > 1) return ';';
+  return ',';
+}
+
+function parseFlexibleDate(value) {
+  if (!value) return null;
+  const trimmed = value.trim();
+
+  const direct = new Date(trimmed.replace(' ', 'T'));
+  if (!Number.isNaN(direct.getTime())) {
+    return direct;
   }
 
-  if (hasOutputHint) {
-    score += 7;
-    analysis.push('Beklediğin çıktı tipini yazmışsın, bu büyük avantaj.');
-  } else {
-    tips.push('Çıktının formatını söyle: "3 madde", "kısa plan", "liste" gibi.');
+  const fullMatch = trimmed.match(/^(\d{2})[./-](\d{2})[./-](\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (fullMatch) {
+    const [, day, month, year, hour = '00', minute = '00', second = '00'] = fullMatch;
+    return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
   }
 
-  if (hasQuestionMark) {
-    score += 3;
-    analysis.push('Soru formatı iletişimi güçlendiriyor.');
+  const shortMatch = trimmed.match(/^(\d{2})[./-](\d{2})[./-](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (shortMatch) {
+    const [, day, month, yearShort, hour = '00', minute = '00', second = '00'] = shortMatch;
+    const year = Number(yearShort) + (Number(yearShort) > 70 ? 1900 : 2000);
+    return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
   }
 
-  if (hasWho) {
-    score += 5;
-    analysis.push('Hedef kitleyi işaretlemen yapay zekâya ton ve seviye hakkında ipucu veriyor.');
-  } else {
-    tips.push('Yanıt kimin için? Öğrenci, öğretmen, jüri... belirtirsen cevap daha isabetli olur.');
-  }
+  return null;
+}
 
-  if (hasPrecision) {
-    score += 5;
-    analysis.push('Özel bir beklenti (tarih, sayı veya yöntem) belirtmişsin.');
-  } else {
-    tips.push('Tek bir ihtiyaca odaklan: bir sayı, karşılaştırma ya da "adım adım" iste.');
-  }
-
-  score = Math.min(100, Math.max(0, Math.round(score)));
-
-  const levelLabel = getScoreLabel(score);
-  const aiComment = buildAIComment(score, wordCount, hasContext, hasActionVerb);
-  const suggestion = buildSuggestion(words);
+function enrichRecord(record, { latitude, longitude, eventDateTime, speedEquivalent }) {
+  const timeDiffSeconds = Math.abs((record.timestamp.getTime() - eventDateTime.getTime()) / 1000);
+  const distanceMeters = haversineDistance(latitude, longitude, record.latitude, record.longitude);
+  const score = distanceMeters + timeDiffSeconds * speedEquivalent;
 
   return {
-    valid: true,
+    ...record,
+    timeDiffSeconds,
+    distanceMeters,
     score,
-    levelLabel,
-    analysis,
-    tips: [...new Set(tips)].slice(0, 4),
-    suggestion,
-    aiComment,
-    wordCount
   };
 }
 
-function getScoreLabel(score) {
-  if (score >= 85) {
-    return 'Jüri Dostu Usta 🎯';
-  }
-  if (score >= 70) {
-    return 'Meraklı Kâşif 🚀';
-  }
-  if (score >= 55) {
-    return 'Yükselen Yıldız ✨';
-  }
-  return 'İlk Adımlar 🌱';
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371000; // metre
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
-function buildAIComment(score, wordCount, hasContext, hasActionVerb) {
-  if (score >= 85) {
-    return 'Bu prompt tam jüri toplantısında kullanılacak cinsten! Net, öz ve etkili.';
-  }
-  if (score >= 70) {
-    return 'Çok iyi gidiyorsun. Biraz daha bağlam ve hedef ekleyebilirsen seviye atlayacaksın.';
-  }
-  if (score >= 55) {
-    const needsContext = !hasContext ? ' Bağlam ekleyerek soruyu derinleştir.' : '';
-    const needsVerb = !hasActionVerb ? ' Güçlü bir eylem fiili seçmeyi dene.' : '';
-    return `Potansiyelin yüksek!${needsContext}${needsVerb}`;
-  }
-  if (wordCount <= 3) {
-    return 'Mini bir cümle olmuş. Yapay zekâ ne istediğini çıkaramayabilir. Biraz detay ekleyelim.';
-  }
-  return 'Bu hâliyle belirsiz. Bir amaç ve çıktı tarifi ekleyerek yapay zekâya pusula verebilirsin.';
+function renderSummary(match, eventDateTime, speedEquivalent) {
+  const timeDiff = formatTimeDifference(match.timeDiffSeconds);
+  const distance = formatDistance(match.distanceMeters);
+
+  summaryCard.innerHTML = `
+    <h2>En Yakın Kayıt</h2>
+    <div class="summary-grid">
+      <div>
+        <p class="label">Hat / IMEI</p>
+        <p class="value">${match.phone}</p>
+      </div>
+      <div>
+        <p class="label">Kayıt Tarihi</p>
+        <p class="value">${formatDate(match.timestamp)}</p>
+      </div>
+      <div>
+        <p class="label">CID / Hücre</p>
+        <p class="value">${match.cell}</p>
+      </div>
+    </div>
+    <div class="summary-insights">
+      <div>
+        <p class="insight-label">Zaman farkı</p>
+        <p class="insight-value">${timeDiff}</p>
+      </div>
+      <div>
+        <p class="insight-label">Mesafe</p>
+        <p class="insight-value">${distance}</p>
+      </div>
+      <div>
+        <p class="insight-label">Skor</p>
+        <p class="insight-value">${formatNumber(match.score)} m</p>
+      </div>
+    </div>
+    <p class="summary-note">Skor, mesafe ile zaman farkının (× ${speedEquivalent} m/s) toplamıdır. Olay zamanı: ${formatDate(eventDateTime)}</p>
+  `;
 }
 
-function buildSuggestion(words) {
-  if (!words.length) {
-    return 'Örneğin: "Solar enerji verimini artırma yollarını 3 maddeyle açıkla" gibi net bir görev verebilirsin.';
+function renderStats(matches, { timeToleranceMinutes, distanceToleranceMeters }) {
+  const items = [];
+  items.push(`Toplam analiz edilen kayıt: <strong>${matches.length}</strong>`);
+  items.push(`En kısa zaman farkı: <strong>${formatTimeDifference(matches[0].timeDiffSeconds)}</strong>`);
+  items.push(`En kısa mesafe: <strong>${formatDistance(matches[0].distanceMeters)}</strong>`);
+
+  if (timeToleranceMinutes > 0) {
+    const withinTime = matches.filter((match) => match.timeDiffSeconds <= timeToleranceMinutes * 60).length;
+    items.push(`${timeToleranceMinutes} dk içinde kalan kayıt: <strong>${withinTime}</strong>`);
   }
 
-  const firstWord = words[0].toLowerCase();
-  const topic = words.slice(1).join(' ');
-  const action = actionVerbs.find((verb) => firstWord.includes(verb)) || 'açıkla';
-  const richerTopic = topic || 'TÜBİTAK 4006B proje posteri sunumu';
+  if (distanceToleranceMeters > 0) {
+    const withinDistance = matches.filter((match) => match.distanceMeters <= distanceToleranceMeters).length;
+    items.push(`${distanceToleranceMeters} m içinde kalan kayıt: <strong>${withinDistance}</strong>`);
+  }
 
-  return `${capitalize(action)} ${richerTopic} için jüriye uygun 3 maddelik bir özet hazırla.`;
+  statsList.innerHTML = items.map((item) => `<li>${item}</li>`).join('');
 }
 
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
+function renderTable(matches) {
+  matchTableBody.innerHTML = matches
+    .map((match, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${match.phone}</td>
+        <td>${formatDate(match.timestamp)}</td>
+        <td>${formatTimeDifference(match.timeDiffSeconds)}</td>
+        <td>${formatDistance(match.distanceMeters)}</td>
+        <td>${match.cell}</td>
+        <td>${formatNumber(match.score)} m</td>
+      </tr>
+    `)
+    .join('');
 }
 
-function renderFeedback(result) {
-  scoreValue.textContent = result.score;
-  scoreLabel.textContent = result.levelLabel;
-  progressBar.style.width = `${result.score}%`;
-  analysisList.innerHTML = '';
-  tipsList.innerHTML = '';
+function formatTimeDifference(seconds) {
+  if (!Number.isFinite(seconds)) return '—';
+  const absSeconds = Math.round(seconds);
+  const minutes = Math.floor(absSeconds / 60);
+  const remainingSeconds = absSeconds % 60;
 
-  result.analysis.forEach((item) => {
-    const li = document.createElement('li');
-    li.textContent = item;
-    analysisList.appendChild(li);
+  if (minutes >= 120) {
+    const hours = Math.round(absSeconds / 3600 * 10) / 10;
+    return `${hours.toLocaleString('tr-TR')} saat`;
+  }
+
+  if (minutes >= 1) {
+    return `${minutes} dk ${remainingSeconds.toString().padStart(2, '0')} sn`;
+  }
+
+  return `${remainingSeconds} sn`;
+}
+
+function formatDistance(meters) {
+  if (!Number.isFinite(meters)) return '—';
+  if (meters >= 1000) {
+    const km = meters / 1000;
+    return `${km.toFixed(2).replace('.', ',')} km`;
+  }
+  return `${Math.round(meters)} m`;
+}
+
+function formatDate(date) {
+  return date.toLocaleString('tr-TR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
-
-  result.tips.forEach((tip) => {
-    const li = document.createElement('li');
-    li.textContent = tip;
-    tipsList.appendChild(li);
-  });
-
-  suggestionBox.textContent = result.suggestion;
-  aiCommentBox.textContent = result.aiComment;
-
-  feedback.classList.remove('hidden');
 }
 
-analyzeBtn.addEventListener('click', () => {
-  resetState();
-  const prompt = promptInput.value;
-  const result = analysePrompt(prompt);
-
-  if (!result.valid) {
-    setError(result.error);
-    return;
-  }
-
-  renderFeedback(result);
-});
-
-promptInput.addEventListener('input', () => {
-  if (promptInput.classList.contains('error')) {
-    resetState();
-  }
-});
+function formatNumber(value) {
+  return Math.round(value).toLocaleString('tr-TR');
+}
