@@ -1,217 +1,354 @@
-const promptInput = document.getElementById('promptInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const helper = document.getElementById('helper');
-const feedback = document.getElementById('feedback');
-const analysisList = document.getElementById('analysisList');
-const tipsList = document.getElementById('tips');
-const suggestionBox = document.getElementById('suggestion');
-const aiCommentBox = document.getElementById('aiComment');
-const scoreValue = document.getElementById('scoreValue');
-const scoreLabel = document.getElementById('scoreLabel');
-const progressBar = document.getElementById('progressBar');
+const missionBtn = document.getElementById('missionBtn');
+const missionTitle = document.getElementById('missionTitle');
+const missionGoal = document.getElementById('missionGoal');
+const missionSupport = document.getElementById('missionSupport');
+const missionTips = document.getElementById('missionTips');
 
-const actionVerbs = [
-  'açıkla', 'analiz', 'karşılaştır', 'listele', 'özetle', 'tasarla', 'üret', 'oluştur',
-  'araştır', 'planla', 'öner', 'değerlendir', 'hesapla', 'tasnif et', 'yorumla', 'bul'
+const mixStoryBtn = document.getElementById('mixStory');
+const saveStoryBtn = document.getElementById('saveStory');
+const storyCharacter = document.getElementById('storyCharacter');
+const storySetting = document.getElementById('storySetting');
+const storyChallenge = document.getElementById('storyChallenge');
+const storyBonus = document.getElementById('storyBonus');
+const storyJournal = document.getElementById('storyJournal');
+
+const dialogueBtn = document.getElementById('dialogueBtn');
+const dialogueScenario = document.getElementById('dialogueScenario');
+const dialogueFocus = document.getElementById('dialogueFocus');
+const dialoguePhrases = document.getElementById('dialoguePhrases');
+
+const reflectionBtn = document.getElementById('reflectionBtn');
+const reflectionPrompt = document.getElementById('reflectionPrompt');
+
+const xpValue = document.getElementById('xpValue');
+const xpBar = document.getElementById('xpBar');
+const xpTasks = document.getElementById('xpTasks');
+const reflectionNotes = document.getElementById('reflectionNotes');
+
+const missionData = [
+  {
+    title: 'STEM Innovation Pitch',
+    goal: 'Introduce a prototype that helps your school save energy during makerspace sessions.',
+    support: 'Start with “Our mission today is to…” and explain what problem you solve.',
+    tips: [
+      'Use modal verbs: can, could, will.',
+      'Add at least one measurable impact sentence (e.g. save 30% energy).',
+      'Invite your teammates to add ideas by asking “What else can we improve?”'
+    ]
+  },
+  {
+    title: 'Global Citizenship Newsflash',
+    goal: 'Prepare a 90-second breaking news update about a student-led social responsibility project.',
+    support: 'Include the 5Ws: who, what, where, when, why.',
+    tips: [
+      'Use strong opening phrases: “Breaking news from our BİLSEM team…”.',
+      'Describe how the project creates positive change.',
+      'End with a call to action for the listeners.'
+    ]
+  },
+  {
+    title: 'Future Skills Debate',
+    goal: 'Argue why creative coding should be part of every gifted learner’s timetable.',
+    support: 'Use “Firstly… Secondly… Finally…” to structure your ideas.',
+    tips: [
+      'Include at least one example from your own learning.',
+      'Use persuasive connectors: therefore, as a result, consequently.',
+      'Offer a question to the other team to keep the debate active.'
+    ]
+  },
+  {
+    title: 'Eco-Inventors Podcast',
+    goal: 'Record a short podcast segment describing an invention that protects biodiversity in your city.',
+    support: 'Explain the invention, its materials, and the benefit for nature.',
+    tips: [
+      'Use descriptive adjectives and relative clauses.',
+      'Mention a real-world inspiration or scientist.',
+      'Invite the audience to imagine using the invention.'
+    ]
+  },
+  {
+    title: 'Art & Design Gallery Talk',
+    goal: 'Guide visitors through an interactive exhibition that combines art and technology.',
+    support: 'Use the present continuous to describe what is happening in each zone.',
+    tips: [
+      'Teach at least one art-related vocabulary item.',
+      'Ask two reflective questions to the audience.',
+      'Connect the exhibition to a Sustainable Development Goal.'
+    ]
+  },
+  {
+    title: 'Mindful Maker Workshop',
+    goal: 'Lead a workshop on designing calm-down tools for stressed students.',
+    support: 'Give clear step-by-step instructions using sequence words.',
+    tips: [
+      'Use imperatives and supportive language (“Remember to breathe…”).',
+      'Add one collaborative mini-task.',
+      'Summarise the benefits at the end.'
+    ]
+  },
+  {
+    title: 'Space Colony Briefing',
+    goal: 'Present a plan for a sustainable habitat on Mars for young explorers.',
+    support: 'Cover energy, food, communication, and wellbeing.',
+    tips: [
+      'Use future tense structures (will, going to).',
+      'Explain how teams will collaborate remotely.',
+      'End with a motivational slogan.'
+    ]
+  },
+  {
+    title: 'Innovation Interview',
+    goal: 'Interview a classmate who has developed a prototype supporting inclusive education.',
+    support: 'Prepare open-ended questions and follow-up prompts.',
+    tips: [
+      'Use active listening phrases: “I see”, “That means…”.',
+      'Summarise the main idea before closing.',
+      'Share one improvement suggestion kindly.'
+    ]
+  }
 ];
 
-const contextWords = [
-  'için', 'hakkında', 'üzerine', 'adımlar', 'detaylı', 'özgün', 'örnek', 'adım adım',
-  'nasıl', 'neden', 'amacı', 'bağlam', 'senaryo', 'hedef'
+const storyData = {
+  characters: [
+    'Curious maker twins',
+    'Eco-hacker siblings',
+    'Time-travelling science mentors',
+    'Empathy-driven game designers',
+    'Young social entrepreneurs',
+    'Biodiversity guardians',
+    'AI-assisted storytellers',
+    'Global problem solvers'
+  ],
+  settings: [
+    'Solar-powered art studio',
+    'Floating STEAM laboratory',
+    'Community innovation bus',
+    'Zero-waste makerspace',
+    'Virtual reality culture museum',
+    'Forest classroom observatory',
+    'Underwater research dome',
+    'Mars habitat simulation hub'
+  ],
+  challenges: [
+    'Design a sustainable community solution',
+    'Reconnect neighbourhoods after a storm',
+    'Teach robotics to younger learners in 3 steps',
+    'Create an inclusive festival experience',
+    'Protect endangered species through storytelling',
+    'Invent a bilingual learning tool',
+    'Transform waste into art with a message',
+    'Launch a kindness campaign across schools'
+  ],
+  bonuses: [
+    'Ekstra görev: En az 5 cümlelik işbirlikçi bir plan yaz.',
+    'Ekstra görev: Hikâyenin sonunda “What if…?” sorusu sor.',
+    'Ekstra görev: Çözümünü bir infografik olarak tasvir et.',
+    'Ekstra görev: Diyalog içinde en az 3 duyu ifadesi kullan.',
+    'Ekstra görev: STEM + sanat bağlantısını vurgulayan bir paragraf ekle.',
+    'Ekstra görev: Hikâyeyi iki bakış açısından anlat.',
+    'Ekstra görev: Problem ve çözüm için mini bir SWOT analizi yap.',
+    'Ekstra görev: Hikâyeni podcast intro cümleleriyle başlat.'
+  ]
+};
+
+const dialogueData = [
+  {
+    scenario: 'Team up to pitch a smart greenhouse to city council.',
+    focus: 'Focus: persuasive & solution-oriented language',
+    phrases: [
+      '“Imagine a greenhouse that texts us when plants need water.”',
+      '“One benefit for our community is…”',
+      '“How might we collaborate with local farmers?”',
+      '“To conclude, we invite you to support…”'
+    ]
+  },
+  {
+    scenario: 'Plan a global online hackathon for eco-inventions.',
+    focus: 'Focus: negotiation & collaboration',
+    phrases: [
+      '“Could we schedule the mentoring sessions on…?”',
+      '“Let’s balance time zones by…”',
+      '“I appreciate your idea because…”',
+      '“Shall we vote on the final toolkit?”'
+    ]
+  },
+  {
+    scenario: 'Design a museum tour about future cities for visiting families.',
+    focus: 'Focus: descriptive & interactive language',
+    phrases: [
+      '“In this zone, families explore…”',
+      '“Would you like to test our prototype?”',
+      '“This feature is inspired by…”',
+      '“Please share how you would improve it.”'
+    ]
+  },
+  {
+    scenario: 'Prepare a student TED-style talk on inclusive playgrounds.',
+    focus: 'Focus: storytelling & empathy',
+    phrases: [
+      '“Let me introduce you to…”',
+      '“The challenge we discovered is…”',
+      '“To make every child feel welcome, we…”',
+      '“Join us in building a playground where…”'
+    ]
+  },
+  {
+    scenario: 'Host a maker fair stand about rethinking daily plastic use.',
+    focus: 'Focus: informative & problem-solution language',
+    phrases: [
+      '“Our prototype reduces plastic because…”',
+      '“Can you imagine replacing this with…?”',
+      '“A quick demonstration shows…”',
+      '“We invite you to pledge to…”'
+    ]
+  },
+  {
+    scenario: 'Organise a peer coaching circle for creative writing portfolios.',
+    focus: 'Focus: feedback & supportive language',
+    phrases: [
+      '“One thing I admire is…”',
+      '“Have you considered adding…?”',
+      '“What if we include a reflection section?”',
+      '“Let’s set a shared deadline for…”'
+    ]
+  }
 ];
 
-const outputHints = ['madde', 'liste', 'tablo', 'plan', 'özet', 'öneri', 'ipucu', 'ipuçları'];
+const reflectionPrompts = [
+  'Which new words helped you express your idea clearly today?',
+  'How did your team show creativity and collaboration during the task?',
+  'What feedback did you give or receive that improved the project?',
+  'If you repeated today’s mission, what would you upgrade?',
+  'Describe one cultural or global connection you noticed.',
+  'Which sentence starter supported your fluency?',
+  'How did you balance English and Turkish to solve the problem?',
+  'What evidence shows that your solution is impactful?'
+];
 
-function resetState() {
-  promptInput.classList.remove('error');
-  helper.classList.remove('error');
-  helper.textContent = 'Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.';
+const xpTasksData = [
+  { id: 'xp-1', label: 'Mission Spinner görevini tamamladım ve konuşmamı kaydettim.', xp: 20 },
+  { id: 'xp-2', label: 'Story Lab karışımından özgün bir yazı taslağı oluşturdum.', xp: 15 },
+  { id: 'xp-3', label: 'Dialogue Challenge için 8 satırlık diyalog yazdım ve canlandırdım.', xp: 20 },
+  { id: 'xp-4', label: 'Reflection Sparks günlük notunu doldurdum.', xp: 10 },
+  { id: 'xp-5', label: 'Takım arkadaşımın çalışmasına yapıcı geri bildirim verdim.', xp: 15 },
+  { id: 'xp-6', label: 'Ürettiğim içeriği dijital bir araçla görselleştirdim.', xp: 20 }
+];
+
+let currentStory = {
+  character: storyCharacter.textContent,
+  setting: storySetting.textContent,
+  challenge: storyChallenge.textContent,
+  bonus: storyBonus.textContent
+};
+
+let totalXP = 0;
+
+function getRandomItem(list) {
+  return list[Math.floor(Math.random() * list.length)];
 }
 
-function setError(message) {
-  promptInput.classList.add('error');
-  helper.classList.add('error');
-  helper.textContent = message;
-  feedback.classList.add('hidden');
-}
+function renderMission() {
+  const mission = getRandomItem(missionData);
+  missionTitle.textContent = mission.title;
+  missionGoal.textContent = mission.goal;
+  missionSupport.textContent = mission.support;
+  missionTips.innerHTML = '';
 
-function analysePrompt(prompt) {
-  const cleanPrompt = prompt.trim();
-  const words = cleanPrompt.split(/\s+/).filter(Boolean);
-  const wordCount = cleanPrompt ? words.length : 0;
-
-  if (wordCount < 2) {
-    return { valid: false, error: 'Promptun çok kısa. En az 2 kelime kullanmayı dene.' };
-  }
-
-  if (wordCount > 10) {
-    return { valid: false, error: 'Promptun çok uzun. 10 kelimeyi geçmeyecek şekilde sadeleştir.' };
-  }
-
-  let score = 50;
-  const analysis = [];
-  const tips = [];
-
-  const hasQuestionMark = /\?/.test(cleanPrompt);
-  const hasContext = contextWords.some((word) => cleanPrompt.toLowerCase().includes(word));
-  const hasActionVerb = actionVerbs.some((verb) => cleanPrompt.toLowerCase().includes(verb));
-  const hasOutputHint = outputHints.some((hint) => cleanPrompt.toLowerCase().includes(hint));
-  const hasWho = /(öğrenci|uzman|çocuk|lise|uzaya|öğretmen|mühendis|doktor)/i.test(cleanPrompt);
-  const hasPrecision = /(tarihini|sayısını|karşılaştır|adım adım|detaylı|örnek)/i.test(cleanPrompt);
-
-  const idealWordBonus = Math.max(0, 18 - Math.abs(6 - wordCount) * 4);
-  score += idealWordBonus;
-
-  analysis.push(`Kelime sayısı ${wordCount}. 5-8 arası jüriyi en çok etkileyen aralık.`);
-
-  if (hasActionVerb) {
-    score += 10;
-    analysis.push('Yapay zekâya net bir görev veriyorsun. Bu harika!');
-  } else {
-    tips.push('Cümleye bir eylem fiili ekle: "açıkla", "özetle", "listele" gibi.');
-    analysis.push('Promptunda doğrudan eylem çağrısı eksik, görev netliği düşüyor.');
-  }
-
-  if (hasContext) {
-    score += 10;
-    analysis.push('Bağlam eklemişsin, yapay zekâ konuyu daha iyi kavrar.');
-  } else {
-    tips.push('Sorunun neden önemli olduğunu kısaca belirt. "... için" kalıbı çok işe yarar.');
-    analysis.push('Bağlam zayıf. Bir hedef, kitle ya da amaç eklemek promptu güçlendirir.');
-  }
-
-  if (hasOutputHint) {
-    score += 7;
-    analysis.push('Beklediğin çıktı tipini yazmışsın, bu büyük avantaj.');
-  } else {
-    tips.push('Çıktının formatını söyle: "3 madde", "kısa plan", "liste" gibi.');
-  }
-
-  if (hasQuestionMark) {
-    score += 3;
-    analysis.push('Soru formatı iletişimi güçlendiriyor.');
-  }
-
-  if (hasWho) {
-    score += 5;
-    analysis.push('Hedef kitleyi işaretlemen yapay zekâya ton ve seviye hakkında ipucu veriyor.');
-  } else {
-    tips.push('Yanıt kimin için? Öğrenci, öğretmen, jüri... belirtirsen cevap daha isabetli olur.');
-  }
-
-  if (hasPrecision) {
-    score += 5;
-    analysis.push('Özel bir beklenti (tarih, sayı veya yöntem) belirtmişsin.');
-  } else {
-    tips.push('Tek bir ihtiyaca odaklan: bir sayı, karşılaştırma ya da "adım adım" iste.');
-  }
-
-  score = Math.min(100, Math.max(0, Math.round(score)));
-
-  const levelLabel = getScoreLabel(score);
-  const aiComment = buildAIComment(score, wordCount, hasContext, hasActionVerb);
-  const suggestion = buildSuggestion(words);
-
-  return {
-    valid: true,
-    score,
-    levelLabel,
-    analysis,
-    tips: [...new Set(tips)].slice(0, 4),
-    suggestion,
-    aiComment,
-    wordCount
-  };
-}
-
-function getScoreLabel(score) {
-  if (score >= 85) {
-    return 'Jüri Dostu Usta 🎯';
-  }
-  if (score >= 70) {
-    return 'Meraklı Kâşif 🚀';
-  }
-  if (score >= 55) {
-    return 'Yükselen Yıldız ✨';
-  }
-  return 'İlk Adımlar 🌱';
-}
-
-function buildAIComment(score, wordCount, hasContext, hasActionVerb) {
-  if (score >= 85) {
-    return 'Bu prompt tam jüri toplantısında kullanılacak cinsten! Net, öz ve etkili.';
-  }
-  if (score >= 70) {
-    return 'Çok iyi gidiyorsun. Biraz daha bağlam ve hedef ekleyebilirsen seviye atlayacaksın.';
-  }
-  if (score >= 55) {
-    const needsContext = !hasContext ? ' Bağlam ekleyerek soruyu derinleştir.' : '';
-    const needsVerb = !hasActionVerb ? ' Güçlü bir eylem fiili seçmeyi dene.' : '';
-    return `Potansiyelin yüksek!${needsContext}${needsVerb}`;
-  }
-  if (wordCount <= 3) {
-    return 'Mini bir cümle olmuş. Yapay zekâ ne istediğini çıkaramayabilir. Biraz detay ekleyelim.';
-  }
-  return 'Bu hâliyle belirsiz. Bir amaç ve çıktı tarifi ekleyerek yapay zekâya pusula verebilirsin.';
-}
-
-function buildSuggestion(words) {
-  if (!words.length) {
-    return 'Örneğin: "Solar enerji verimini artırma yollarını 3 maddeyle açıkla" gibi net bir görev verebilirsin.';
-  }
-
-  const firstWord = words[0].toLowerCase();
-  const topic = words.slice(1).join(' ');
-  const action = actionVerbs.find((verb) => firstWord.includes(verb)) || 'açıkla';
-  const richerTopic = topic || 'TÜBİTAK 4006B proje posteri sunumu';
-
-  return `${capitalize(action)} ${richerTopic} için jüriye uygun 3 maddelik bir özet hazırla.`;
-}
-
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function renderFeedback(result) {
-  scoreValue.textContent = result.score;
-  scoreLabel.textContent = result.levelLabel;
-  progressBar.style.width = `${result.score}%`;
-  analysisList.innerHTML = '';
-  tipsList.innerHTML = '';
-
-  result.analysis.forEach((item) => {
-    const li = document.createElement('li');
-    li.textContent = item;
-    analysisList.appendChild(li);
-  });
-
-  result.tips.forEach((tip) => {
+  mission.tips.forEach((tip) => {
     const li = document.createElement('li');
     li.textContent = tip;
-    tipsList.appendChild(li);
+    missionTips.appendChild(li);
   });
-
-  suggestionBox.textContent = result.suggestion;
-  aiCommentBox.textContent = result.aiComment;
-
-  feedback.classList.remove('hidden');
 }
 
-analyzeBtn.addEventListener('click', () => {
-  resetState();
-  const prompt = promptInput.value;
-  const result = analysePrompt(prompt);
+function mixStory() {
+  const character = getRandomItem(storyData.characters);
+  const setting = getRandomItem(storyData.settings);
+  const challenge = getRandomItem(storyData.challenges);
+  const bonus = getRandomItem(storyData.bonuses);
 
-  if (!result.valid) {
-    setError(result.error);
-    return;
+  storyCharacter.textContent = character;
+  storySetting.textContent = setting;
+  storyChallenge.textContent = challenge;
+  storyBonus.textContent = bonus;
+
+  currentStory = { character, setting, challenge, bonus };
+}
+
+function saveStoryToJournal() {
+  const entry = `${currentStory.character} @ ${currentStory.setting} → ${currentStory.challenge} | ${currentStory.bonus}`;
+  const li = document.createElement('li');
+  li.textContent = entry;
+  storyJournal.prepend(li);
+
+  const maxEntries = 6;
+  while (storyJournal.children.length > maxEntries) {
+    storyJournal.removeChild(storyJournal.lastChild);
   }
+}
 
-  renderFeedback(result);
-});
+function renderDialogue() {
+  const dialogue = getRandomItem(dialogueData);
+  dialogueScenario.textContent = dialogue.scenario;
+  dialogueFocus.textContent = dialogue.focus;
+  dialoguePhrases.innerHTML = '';
 
-promptInput.addEventListener('input', () => {
-  if (promptInput.classList.contains('error')) {
-    resetState();
-  }
-});
+  dialogue.phrases.forEach((phrase) => {
+    const li = document.createElement('li');
+    li.textContent = phrase;
+    dialoguePhrases.appendChild(li);
+  });
+}
+
+function renderReflection() {
+  const prompt = getRandomItem(reflectionPrompts);
+  reflectionPrompt.textContent = prompt;
+  reflectionNotes.focus();
+}
+
+function updateXP() {
+  totalXP = Array.from(xpTasks.querySelectorAll('input[type="checkbox"]')).reduce((sum, checkbox) => {
+    if (checkbox.checked) {
+      return sum + Number(checkbox.dataset.xp);
+    }
+    return sum;
+  }, 0);
+
+  xpValue.textContent = totalXP;
+  xpBar.style.width = `${Math.min(totalXP, 100)}%`;
+}
+
+function renderXPTasks() {
+  xpTasksData.forEach((task) => {
+    const li = document.createElement('li');
+    const label = document.createElement('label');
+    label.setAttribute('for', task.id);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = task.id;
+    checkbox.dataset.xp = String(task.xp);
+
+    const span = document.createElement('span');
+    span.textContent = `${task.label} (+${task.xp} XP)`;
+
+    checkbox.addEventListener('change', updateXP);
+
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    li.appendChild(label);
+    xpTasks.appendChild(li);
+  });
+}
+
+missionBtn.addEventListener('click', renderMission);
+mixStoryBtn.addEventListener('click', mixStory);
+saveStoryBtn.addEventListener('click', saveStoryToJournal);
+dialogueBtn.addEventListener('click', renderDialogue);
+reflectionBtn.addEventListener('click', renderReflection);
+
+mixStory();
+renderDialogue();
+renderXPTasks();
+renderReflection();
+updateXP();

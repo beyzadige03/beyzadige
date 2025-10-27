@@ -3,74 +3,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Koçu | 4006B Yapay Zeka Jüri Şovu</title>
+  <title>BİLSEM English Quest | Oyunlu Dil Atölyesi</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="glow"></div>
-  <div class="glow glow-2"></div>
+  <div class="bg-shapes"></div>
+  <div class="bg-shapes glow"></div>
   <div class="container">
     <header>
-      <h1>Prompt Koçu</h1>
-      <p class="subtitle">Yapay zekâ ile daha doğru iletişim kur, jüriyi ilk bakışta etkile!</p>
+      <h1>BİLSEM English Quest</h1>
+      <p class="subtitle">Oyunlaştırılmış görevlerle konuşma ve yazma becerilerini geliştir, BİLSEM İngilizce Çerçeve Programı'ndaki temaları keşfet.</p>
+      <p class="framework">Temalar: STEM &amp; Makerspace · Sanat &amp; Tasarım · Doğa &amp; Sürdürülebilirlik · Küresel Vatandaşlık · Geleceğin Becerileri</p>
     </header>
 
     <main>
-      <section class="prompt-card">
-        <div class="card-header">
-          <h2>Prompunu Dinliyoruz</h2>
-          <span class="tag">AI Destekli Analiz</span>
+      <section class="intro-card">
+        <div>
+          <h2>Nasıl Oynanır?</h2>
+          <ul>
+            <li><strong>Görev Seç:</strong> Konuşma odaklı bir görev almak için Mission Spinner'ı çevir.</li>
+            <li><strong>Üret:</strong> Story Lab karışımlarından özgün hikâyeler ve projeler yaz.</li>
+            <li><strong>İş Birliği Yap:</strong> Dialogue Challenge ile takım arkadaşınla mini diyaloglar kurgula.</li>
+            <li><strong>Yansıt:</strong> Reflection Sparks ile yazdıklarını değerlendirmeyi unutma.</li>
+          </ul>
         </div>
-        <p class="helper-text">En az <strong>2</strong>, en fazla <strong>10</strong> kelime olacak şekilde yaz.</p>
-        <label class="visually-hidden" for="promptInput">Prompt</label>
-        <textarea id="promptInput" rows="2" maxlength="120" placeholder="En son ChatGPT'ye ne sordun? Buraya yaz, puanını öğren. Gerçekten iyi bir araştırmacı mısın? :)" aria-describedby="helper"></textarea>
-        <div id="helper" class="microcopy">Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.</div>
-        <button id="analyzeBtn" type="button">Analiz Et</button>
-        <p class="hint">Tüyolar mı lazım? Aşağıya bak, promptunu yapay zekâ nasıl görüyor öğren.</p>
+        <div class="tip-card">
+          <h3>21. Yüzyıl Stratejileri</h3>
+          <p>Her görevde <strong>kritik düşünme</strong>, <strong>yaratıcılık</strong>, <strong>iletişim</strong> ve <strong>iş birliği</strong> becerilerine odaklan. Kazandığın puanlar Quest XP olarak toplanır.</p>
+        </div>
       </section>
 
-      <section id="feedback" class="feedback hidden" aria-live="polite">
-        <div class="score-panel">
-          <div class="score-circle">
-            <span id="scoreValue">0</span>
+      <section class="game-grid">
+        <article class="game-card">
+          <header class="game-card__header">
+            <h2>Mission Spinner</h2>
+            <span class="tag speaking">Speaking Quest</span>
+          </header>
+          <p class="game-card__intro">BİLSEM temalarına uygun görev kartını çevir. Görevi 2 dakikada planla ve arkadaşlarınla paylaşıp konuş.</p>
+          <div class="mission-board">
+            <h3 id="missionTitle">Hazır mısın?</h3>
+            <p id="missionGoal" class="mission-goal">Görevi görmek için düğmeye bas.</p>
+            <p id="missionSupport" class="mission-support"></p>
+            <ul id="missionTips" class="mission-tips"></ul>
           </div>
-          <div class="score-info">
-            <h3>Promp Puanın</h3>
-            <p id="scoreLabel">Hazır mısın?</p>
-          </div>
-        </div>
+          <button id="missionBtn" type="button" class="primary">Yeni Görev Çevir</button>
+        </article>
 
-        <div class="progress">
-          <div id="progressBar" class="progress-bar"></div>
-        </div>
+        <article class="game-card">
+          <header class="game-card__header">
+            <h2>Story Lab</h2>
+            <span class="tag writing">Writing Quest</span>
+          </header>
+          <p class="game-card__intro">Karakter + Mekân + Meydan okuma kartlarını karıştır; yaratıcı yazma ya da proje tasarımını hemen başlat.</p>
+          <div class="story-grid">
+            <div>
+              <h3>Character</h3>
+              <p id="storyCharacter">Curious maker twins</p>
+            </div>
+            <div>
+              <h3>Setting</h3>
+              <p id="storySetting">Solar-powered art studio</p>
+            </div>
+            <div>
+              <h3>Challenge</h3>
+              <p id="storyChallenge">Design a sustainable community solution</p>
+            </div>
+          </div>
+          <p id="storyBonus" class="story-bonus">Ekstra görev: En az 5 cümlelik işbirlikçi bir plan yaz.</p>
+          <div class="story-actions">
+            <button id="mixStory" type="button" class="primary">Karıştır</button>
+            <button id="saveStory" type="button" class="ghost">Quest Günlüğüne Ekle</button>
+          </div>
+          <div class="story-journal">
+            <h3>Quest Günlüğü</h3>
+            <ol id="storyJournal"></ol>
+          </div>
+        </article>
 
-        <div class="analysis">
-          <h3>Analiz Notları</h3>
-          <ul id="analysisList"></ul>
-        </div>
+        <article class="game-card">
+          <header class="game-card__header">
+            <h2>Dialogue Challenge</h2>
+            <span class="tag collaboration">Team Quest</span>
+          </header>
+          <p class="game-card__intro">Bir BİLSEM senaryosu seç, rol dağıt, 8 satırlık mini diyalog yaz. Her satıra bir 21. yy iletişim stratejisi ekle.</p>
+          <div class="dialogue-card">
+            <h3 id="dialogueScenario">Team up to pitch a smart greenhouse to city council.</h3>
+            <p id="dialogueFocus" class="dialogue-focus">Focus: persuasive &amp; solution-oriented language</p>
+            <ul id="dialoguePhrases" class="dialogue-phrases"></ul>
+          </div>
+          <button id="dialogueBtn" type="button" class="primary">Yeni Senaryo Oluştur</button>
+        </article>
 
-        <div class="coach">
-          <div class="coach-card">
-            <h3>Yapay Zekâ Şunu Diyor</h3>
-            <p id="aiComment"></p>
+        <article class="game-card">
+          <header class="game-card__header">
+            <h2>Reflection Sparks</h2>
+            <span class="tag reflection">Metacognition</span>
+          </header>
+          <p class="game-card__intro">Çalışmanı tamamladıktan sonra bu kıvılcımları kullanarak öğrenmeni değerlendir.</p>
+          <div class="reflection-box">
+            <p id="reflectionPrompt">Which new words helped you express your idea clearly today?</p>
           </div>
-          <div class="coach-card">
-            <h3>Şöyle De Yazabilirdin</h3>
-            <p id="suggestion"></p>
+          <div class="reflection-actions">
+            <button id="reflectionBtn" type="button" class="primary">Yeni Kıvılcım</button>
+            <textarea id="reflectionNotes" rows="4" placeholder="Kısa bir değerlendirme yaz, istersen İngilizce-Türkçe karışık not tut."></textarea>
           </div>
-          <div class="coach-card">
-            <h3>Bir Tık Daha İyi Olmak İçin</h3>
-            <ul id="tips"></ul>
+        </article>
+      </section>
+
+      <section class="progress-section">
+        <div class="progress-card">
+          <div>
+            <h2>Quest XP Panosu</h2>
+            <p>Bütün görevleri tamamladığında 100 XP kazanarak "Future Ready Communicator" rozeti elde et.</p>
+          </div>
+          <div class="xp-counter">
+            <span id="xpValue">0</span>
+            <span>XP</span>
           </div>
         </div>
+        <div class="xp-progress">
+          <div id="xpBar"></div>
+        </div>
+        <ul id="xpTasks" class="xp-tasks"></ul>
       </section>
     </main>
 
     <footer>
-      <p>4006B TÜBİTAK Bilim Fuarı · Prompt koçu, doğru sorunun gücünü gösterir.</p>
+      <p>BİLSEM öğrencileri için İngilizce oyun odaklı öğrenme alanı · Konuş, yaz, üret!</p>
     </footer>
   </div>
 
