@@ -3,77 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Koçu | 4006B Yapay Zeka Jüri Şovu</title>
+  <title>Delil Notları | Savcı Asistanı</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="glow"></div>
-  <div class="glow glow-2"></div>
-  <div class="container">
-    <header>
-      <h1>Prompt Koçu</h1>
-      <p class="subtitle">Yapay zekâ ile daha doğru iletişim kur, jüriyi ilk bakışta etkile!</p>
+  <div class="background-glow"></div>
+  <div class="background-glow glow-2"></div>
+
+  <div class="app">
+    <header class="app-header">
+      <p class="badge">Adli Teknoloji Aracı</p>
+      <h1>Delil Notları</h1>
+      <p class="lead">PDF formatındaki dosyaları yükleyin, sistem saniyeler içerisinde özet çıkarıp kritik bilgileri not alsın. Savcıların iş yükünü hafifletmek için tasarlandı.</p>
     </header>
 
-    <main>
-      <section class="prompt-card">
+    <main class="content">
+      <section class="upload-card" aria-labelledby="uploadTitle">
         <div class="card-header">
-          <h2>Prompunu Dinliyoruz</h2>
-          <span class="tag">AI Destekli Analiz</span>
+          <h2 id="uploadTitle">Dosya Yükle</h2>
+          <span class="tag">PDF Analizi</span>
         </div>
-        <p class="helper-text">En az <strong>2</strong>, en fazla <strong>10</strong> kelime olacak şekilde yaz.</p>
-        <label class="visually-hidden" for="promptInput">Prompt</label>
-        <textarea id="promptInput" rows="2" maxlength="120" placeholder="En son ChatGPT'ye ne sordun? Buraya yaz, puanını öğren. Gerçekten iyi bir araştırmacı mısın? :)" aria-describedby="helper"></textarea>
-        <div id="helper" class="microcopy">Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.</div>
-        <button id="analyzeBtn" type="button">Analiz Et</button>
-        <p class="hint">Tüyolar mı lazım? Aşağıya bak, promptunu yapay zekâ nasıl görüyor öğren.</p>
+        <p class="card-intro">Soruşturma dosyanızdaki PDF belgelerini yükleyin. Sistem belgeyi analiz ederek özet çıkarır, önemli tarihleri ve tutarları not eder.</p>
+
+        <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="PDF yükleme alanı">
+          <input type="file" id="pdfInput" accept="application/pdf" aria-label="PDF dosyası seç" hidden>
+          <div class="drop-content">
+            <div class="icon">📄</div>
+            <p><strong>PDF seçin</strong> veya sürükleyip bırakın</p>
+            <p class="hint">Azami 20 MB. Bir seferde tek dosya yüklenebilir.</p>
+            <button id="selectBtn" type="button">PDF Dosyası Seç</button>
+          </div>
+        </div>
+
+        <div class="status" id="statusMessage" aria-live="polite"></div>
       </section>
 
-      <section id="feedback" class="feedback hidden" aria-live="polite">
-        <div class="score-panel">
-          <div class="score-circle">
-            <span id="scoreValue">0</span>
+      <section id="results" class="results hidden" aria-live="polite">
+        <div class="summary-card">
+          <div class="summary-header">
+            <h2>Belge Özeti</h2>
+            <span id="pageCount" class="summary-meta"></span>
           </div>
-          <div class="score-info">
-            <h3>Promp Puanın</h3>
-            <p id="scoreLabel">Hazır mısın?</p>
-          </div>
+          <p id="summaryText" class="summary-text"></p>
         </div>
 
-        <div class="progress">
-          <div id="progressBar" class="progress-bar"></div>
-        </div>
-
-        <div class="analysis">
-          <h3>Analiz Notları</h3>
-          <ul id="analysisList"></ul>
-        </div>
-
-        <div class="coach">
-          <div class="coach-card">
-            <h3>Yapay Zekâ Şunu Diyor</h3>
-            <p id="aiComment"></p>
-          </div>
-          <div class="coach-card">
-            <h3>Şöyle De Yazabilirdin</h3>
-            <p id="suggestion"></p>
-          </div>
-          <div class="coach-card">
-            <h3>Bir Tık Daha İyi Olmak İçin</h3>
-            <ul id="tips"></ul>
-          </div>
+        <div class="grid">
+          <article class="note-card">
+            <h3>Önemli Bilgiler</h3>
+            <ul id="highlightList" class="list"></ul>
+          </article>
+          <article class="note-card">
+            <h3>Kilit Kavramlar</h3>
+            <div id="keywordChips" class="chips"></div>
+          </article>
+          <article class="note-card">
+            <h3>Hızlı Analiz</h3>
+            <ul id="quickStats" class="list"></ul>
+          </article>
         </div>
       </section>
     </main>
 
-    <footer>
-      <p>4006B TÜBİTAK Bilim Fuarı · Prompt koçu, doğru sorunun gücünü gösterir.</p>
+    <footer class="app-footer">
+      <p>© 2024 Delil Notları · Adli süreçlerde hızlı bilgiye erişim için geliştirildi.</p>
     </footer>
   </div>
 
+  <div id="loading" class="loading hidden" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <p>Belge analiz ediliyor...</p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    if (window['pdfjsLib']) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
