@@ -14,6 +14,7 @@ const stopRecordingButton = document.getElementById('stopRecording');
 const recordingStatus = document.getElementById('recordingStatus');
 const audioPlayback = document.getElementById('audioPlayback');
 const downloadLink = document.getElementById('downloadLink');
+const animationStatus = document.getElementById('animationStatus');
 
 const backgrounds = [
   {
@@ -41,6 +42,8 @@ const backgrounds = [
     style: 'radial-gradient(circle at 50% 0%, rgba(255, 221, 89, 0.36), transparent 70%), #1f1147'
   }
 ];
+
+const poseClasses = ['pose-idle', 'pose-wave', 'pose-bounce', 'pose-slide'];
 
 const characterPresets = [
   { id: 'explorer', name: 'Kaşif', emoji: '🧭', defaultColor: '#4cc9f0' },
@@ -95,6 +98,37 @@ let scenes = [];
 let mediaRecorder;
 let recordedChunks = [];
 let audioBlobUrl;
+let animationTimeouts = [];
+
+function setAnimationStatus(message) {
+  if (animationStatus) {
+    animationStatus.textContent = message;
+  }
+}
+
+function clearAnimationQueue() {
+  animationTimeouts.forEach((timeoutId) => {
+    clearTimeout(timeoutId);
+  });
+  animationTimeouts = [];
+}
+
+function resetCharacterAnimations() {
+  Array.from(characterSlots.children).forEach((element) => {
+    element.classList.remove('is-animating');
+
+    const avatar = element.querySelector('.character-avatar');
+    const dialogue = element.querySelector('.dialogue');
+
+    if (avatar) {
+      avatar.classList.remove(...poseClasses);
+    }
+
+    if (dialogue) {
+      dialogue.classList.remove('show-dialogue');
+    }
+  });
+}
 
 function getPreset(presetId) {
   return characterPresets.find((preset) => preset.id === presetId) ?? characterPresets[0];
@@ -190,6 +224,16 @@ function renderCharactersOnStage() {
     wrapper.append(avatar, name, dialogue);
     characterSlots.appendChild(wrapper);
   });
+
+  resetCharacterAnimations();
+
+  if (!stage.classList.contains('is-playing')) {
+    if (characters.some((character) => character.active)) {
+      setAnimationStatus('Animasyona hazır.');
+    } else {
+      setAnimationStatus('Animasyon için en az bir karakteri aktif hale getirin.');
+    }
+  }
 }
 
 function createCharacterControl(character, index) {
@@ -285,29 +329,68 @@ function renderCharacterControls() {
 function playAnimation() {
   const characterElements = Array.from(characterSlots.children);
   if (!characterElements.length) {
+    setAnimationStatus('Animasyon için sahneye karakter ekleyin.');
     return;
   }
 
-  characterElements.forEach((element, index) => {
-    const avatar = element.querySelector('.character-avatar');
-    const poseClass = characters[index].pose;
-
-    avatar.classList.remove('pose-idle', 'pose-wave', 'pose-bounce', 'pose-slide');
-
-    if (characters[index].active) {
-      void avatar.offsetWidth;
-      avatar.classList.add(poseClass);
-    }
+  const activeElements = characterElements.filter((element) => {
+    const index = Number(element.dataset.index);
+    return characters[index]?.active;
   });
 
+  if (!activeElements.length) {
+    setAnimationStatus('Animasyon için en az bir karakteri aktif hale getirin.');
+    resetCharacterAnimations();
+    stage.classList.remove('is-playing');
+    return;
+  }
+
+  clearAnimationQueue();
+  resetCharacterAnimations();
+
+  stage.classList.remove('is-playing');
+  void stage.offsetWidth;
+  stage.classList.add('is-playing');
   playAnimationButton.disabled = true;
-  setTimeout(() => {
-    characterElements.forEach((element) => {
-      const avatar = element.querySelector('.character-avatar');
-      avatar.classList.remove('pose-idle', 'pose-wave', 'pose-bounce', 'pose-slide');
-    });
+  setAnimationStatus('Animasyon oynatılıyor...');
+
+  const highlightDelay = 550;
+
+  activeElements.forEach((element, order) => {
+    const index = Number(element.dataset.index);
+    const avatar = element.querySelector('.character-avatar');
+    const dialogue = element.querySelector('.dialogue');
+    const poseClass = characters[index].pose;
+
+    if (avatar) {
+      avatar.classList.remove(...poseClasses);
+    }
+
+    const startTimeout = setTimeout(() => {
+      element.classList.add('is-animating');
+      if (dialogue) {
+        dialogue.classList.add('show-dialogue');
+      }
+      if (avatar) {
+        void avatar.offsetWidth;
+        avatar.classList.add(poseClass);
+      }
+    }, order * highlightDelay);
+
+    animationTimeouts.push(startTimeout);
+  });
+
+  const animationDuration = Math.max(3200, activeElements.length * highlightDelay + 1800);
+
+  const finalizeTimeout = setTimeout(() => {
+    resetCharacterAnimations();
+    stage.classList.remove('is-playing');
     playAnimationButton.disabled = false;
-  }, 4000);
+    setAnimationStatus('Animasyon tamamlandı.');
+    clearAnimationQueue();
+  }, animationDuration);
+
+  animationTimeouts.push(finalizeTimeout);
 }
 
 function handleSceneFormSubmit(event) {
@@ -377,6 +460,11 @@ function renderScenes() {
 }
 
 function resetStage() {
+  clearAnimationQueue();
+  resetCharacterAnimations();
+  stage.classList.remove('is-playing');
+  playAnimationButton.disabled = false;
+
   characters = defaultCharacters();
   selectedBackground = backgrounds[0].id;
   scenes = [];
@@ -385,6 +473,7 @@ function resetStage() {
   renderCharactersOnStage();
   renderScenes();
   setBackground(selectedBackground);
+  setAnimationStatus('Animasyona hazır.');
 }
 
 async function startRecording() {
