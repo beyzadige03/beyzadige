@@ -1,217 +1,307 @@
-const promptInput = document.getElementById('promptInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const helper = document.getElementById('helper');
-const feedback = document.getElementById('feedback');
-const analysisList = document.getElementById('analysisList');
-const tipsList = document.getElementById('tips');
-const suggestionBox = document.getElementById('suggestion');
-const aiCommentBox = document.getElementById('aiComment');
-const scoreValue = document.getElementById('scoreValue');
-const scoreLabel = document.getElementById('scoreLabel');
-const progressBar = document.getElementById('progressBar');
+const cameraFeed = document.getElementById('cameraFeed');
+const debugCanvas = document.getElementById('debugCanvas');
+const pointer = document.getElementById('virtualPointer');
+const blinkIndicator = document.getElementById('blinkIndicator');
+const cameraStatus = document.getElementById('cameraStatus');
+const modelStatus = document.getElementById('modelStatus');
+const blinkStatus = document.getElementById('blinkStatus');
+const clickStatus = document.getElementById('clickStatus');
+const cameraBtn = document.getElementById('cameraBtn');
+const calibrateBtn = document.getElementById('calibrateBtn');
+const contextMenu = document.getElementById('contextMenu');
+const closeMenuBtn = document.getElementById('closeMenuBtn');
+const stage = document.getElementById('stage');
 
-const actionVerbs = [
-  'açıkla', 'analiz', 'karşılaştır', 'listele', 'özetle', 'tasarla', 'üret', 'oluştur',
-  'araştır', 'planla', 'öner', 'değerlendir', 'hesapla', 'tasnif et', 'yorumla', 'bul'
-];
+const LEFT_EYE_INDICES = [33, 160, 158, 133, 153, 144];
+const RIGHT_EYE_INDICES = [362, 385, 387, 263, 373, 380];
+const LEFT_IRIS_INDICES = [468, 469, 470, 471];
+const RIGHT_IRIS_INDICES = [473, 474, 475, 476];
 
-const contextWords = [
-  'için', 'hakkında', 'üzerine', 'adımlar', 'detaylı', 'özgün', 'örnek', 'adım adım',
-  'nasıl', 'neden', 'amacı', 'bağlam', 'senaryo', 'hedef'
-];
+const BLINK_THRESHOLD = 0.19;
+const BLINK_MIN_DURATION = 80;
+const BLINK_MAX_DURATION = 400;
+const SMOOTHING = 0.15;
 
-const outputHints = ['madde', 'liste', 'tablo', 'plan', 'özet', 'öneri', 'ipucu', 'ipuçları'];
+let model;
+let stream;
+let animationId;
+let pointerX = 0;
+let pointerY = 0;
+let targetX = pointerX;
+let targetY = pointerY;
+let lastBlinkState = false;
+let blinkStartTime = 0;
+let lastRightClick = 0;
 
-function resetState() {
-  promptInput.classList.remove('error');
-  helper.classList.remove('error');
-  helper.textContent = 'Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.';
+const ctx = debugCanvas.getContext('2d');
+
+function centerPointer() {
+  const rect = stage.getBoundingClientRect();
+  pointerX = rect.width / 2;
+  pointerY = rect.height / 2;
+  targetX = pointerX;
+  targetY = pointerY;
+  pointer.style.left = `${pointerX}px`;
+  pointer.style.top = `${pointerY}px`;
 }
 
-function setError(message) {
-  promptInput.classList.add('error');
-  helper.classList.add('error');
-  helper.textContent = message;
-  feedback.classList.add('hidden');
+centerPointer();
+
+async function initModel() {
+  try {
+    modelStatus.textContent = 'Modeller yükleniyor';
+    model = await faceLandmarksDetection.load(
+      faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+      {
+        maxFaces: 1,
+        shouldLoadIrisModel: true
+      }
+    );
+    modelStatus.textContent = 'Hazır';
+    if (stream) {
+      startPredictionLoop();
+    }
+  } catch (error) {
+    console.error(error);
+    modelStatus.textContent = 'Yüklenemedi';
+  }
 }
 
-function analysePrompt(prompt) {
-  const cleanPrompt = prompt.trim();
-  const words = cleanPrompt.split(/\s+/).filter(Boolean);
-  const wordCount = cleanPrompt ? words.length : 0;
-
-  if (wordCount < 2) {
-    return { valid: false, error: 'Promptun çok kısa. En az 2 kelime kullanmayı dene.' };
+async function initCamera() {
+  try {
+    cameraStatus.textContent = 'Kamera isteniyor';
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    cameraFeed.srcObject = stream;
+    cameraStatus.textContent = 'Açık';
+    calibrateBtn.disabled = false;
+    startPredictionLoop();
+  } catch (error) {
+    console.error(error);
+    cameraStatus.textContent = 'İzin verilmedi';
   }
-
-  if (wordCount > 10) {
-    return { valid: false, error: 'Promptun çok uzun. 10 kelimeyi geçmeyecek şekilde sadeleştir.' };
-  }
-
-  let score = 50;
-  const analysis = [];
-  const tips = [];
-
-  const hasQuestionMark = /\?/.test(cleanPrompt);
-  const hasContext = contextWords.some((word) => cleanPrompt.toLowerCase().includes(word));
-  const hasActionVerb = actionVerbs.some((verb) => cleanPrompt.toLowerCase().includes(verb));
-  const hasOutputHint = outputHints.some((hint) => cleanPrompt.toLowerCase().includes(hint));
-  const hasWho = /(öğrenci|uzman|çocuk|lise|uzaya|öğretmen|mühendis|doktor)/i.test(cleanPrompt);
-  const hasPrecision = /(tarihini|sayısını|karşılaştır|adım adım|detaylı|örnek)/i.test(cleanPrompt);
-
-  const idealWordBonus = Math.max(0, 18 - Math.abs(6 - wordCount) * 4);
-  score += idealWordBonus;
-
-  analysis.push(`Kelime sayısı ${wordCount}. 5-8 arası jüriyi en çok etkileyen aralık.`);
-
-  if (hasActionVerb) {
-    score += 10;
-    analysis.push('Yapay zekâya net bir görev veriyorsun. Bu harika!');
-  } else {
-    tips.push('Cümleye bir eylem fiili ekle: "açıkla", "özetle", "listele" gibi.');
-    analysis.push('Promptunda doğrudan eylem çağrısı eksik, görev netliği düşüyor.');
-  }
-
-  if (hasContext) {
-    score += 10;
-    analysis.push('Bağlam eklemişsin, yapay zekâ konuyu daha iyi kavrar.');
-  } else {
-    tips.push('Sorunun neden önemli olduğunu kısaca belirt. "... için" kalıbı çok işe yarar.');
-    analysis.push('Bağlam zayıf. Bir hedef, kitle ya da amaç eklemek promptu güçlendirir.');
-  }
-
-  if (hasOutputHint) {
-    score += 7;
-    analysis.push('Beklediğin çıktı tipini yazmışsın, bu büyük avantaj.');
-  } else {
-    tips.push('Çıktının formatını söyle: "3 madde", "kısa plan", "liste" gibi.');
-  }
-
-  if (hasQuestionMark) {
-    score += 3;
-    analysis.push('Soru formatı iletişimi güçlendiriyor.');
-  }
-
-  if (hasWho) {
-    score += 5;
-    analysis.push('Hedef kitleyi işaretlemen yapay zekâya ton ve seviye hakkında ipucu veriyor.');
-  } else {
-    tips.push('Yanıt kimin için? Öğrenci, öğretmen, jüri... belirtirsen cevap daha isabetli olur.');
-  }
-
-  if (hasPrecision) {
-    score += 5;
-    analysis.push('Özel bir beklenti (tarih, sayı veya yöntem) belirtmişsin.');
-  } else {
-    tips.push('Tek bir ihtiyaca odaklan: bir sayı, karşılaştırma ya da "adım adım" iste.');
-  }
-
-  score = Math.min(100, Math.max(0, Math.round(score)));
-
-  const levelLabel = getScoreLabel(score);
-  const aiComment = buildAIComment(score, wordCount, hasContext, hasActionVerb);
-  const suggestion = buildSuggestion(words);
-
-  return {
-    valid: true,
-    score,
-    levelLabel,
-    analysis,
-    tips: [...new Set(tips)].slice(0, 4),
-    suggestion,
-    aiComment,
-    wordCount
-  };
 }
 
-function getScoreLabel(score) {
-  if (score >= 85) {
-    return 'Jüri Dostu Usta 🎯';
-  }
-  if (score >= 70) {
-    return 'Meraklı Kâşif 🚀';
-  }
-  if (score >= 55) {
-    return 'Yükselen Yıldız ✨';
-  }
-  return 'İlk Adımlar 🌱';
-}
-
-function buildAIComment(score, wordCount, hasContext, hasActionVerb) {
-  if (score >= 85) {
-    return 'Bu prompt tam jüri toplantısında kullanılacak cinsten! Net, öz ve etkili.';
-  }
-  if (score >= 70) {
-    return 'Çok iyi gidiyorsun. Biraz daha bağlam ve hedef ekleyebilirsen seviye atlayacaksın.';
-  }
-  if (score >= 55) {
-    const needsContext = !hasContext ? ' Bağlam ekleyerek soruyu derinleştir.' : '';
-    const needsVerb = !hasActionVerb ? ' Güçlü bir eylem fiili seçmeyi dene.' : '';
-    return `Potansiyelin yüksek!${needsContext}${needsVerb}`;
-  }
-  if (wordCount <= 3) {
-    return 'Mini bir cümle olmuş. Yapay zekâ ne istediğini çıkaramayabilir. Biraz detay ekleyelim.';
-  }
-  return 'Bu hâliyle belirsiz. Bir amaç ve çıktı tarifi ekleyerek yapay zekâya pusula verebilirsin.';
-}
-
-function buildSuggestion(words) {
-  if (!words.length) {
-    return 'Örneğin: "Solar enerji verimini artırma yollarını 3 maddeyle açıkla" gibi net bir görev verebilirsin.';
-  }
-
-  const firstWord = words[0].toLowerCase();
-  const topic = words.slice(1).join(' ');
-  const action = actionVerbs.find((verb) => firstWord.includes(verb)) || 'açıkla';
-  const richerTopic = topic || 'TÜBİTAK 4006B proje posteri sunumu';
-
-  return `${capitalize(action)} ${richerTopic} için jüriye uygun 3 maddelik bir özet hazırla.`;
-}
-
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function renderFeedback(result) {
-  scoreValue.textContent = result.score;
-  scoreLabel.textContent = result.levelLabel;
-  progressBar.style.width = `${result.score}%`;
-  analysisList.innerHTML = '';
-  tipsList.innerHTML = '';
-
-  result.analysis.forEach((item) => {
-    const li = document.createElement('li');
-    li.textContent = item;
-    analysisList.appendChild(li);
-  });
-
-  result.tips.forEach((tip) => {
-    const li = document.createElement('li');
-    li.textContent = tip;
-    tipsList.appendChild(li);
-  });
-
-  suggestionBox.textContent = result.suggestion;
-  aiCommentBox.textContent = result.aiComment;
-
-  feedback.classList.remove('hidden');
-}
-
-analyzeBtn.addEventListener('click', () => {
-  resetState();
-  const prompt = promptInput.value;
-  const result = analysePrompt(prompt);
-
-  if (!result.valid) {
-    setError(result.error);
+function startPredictionLoop() {
+  if (!model) {
+    console.warn('Model henüz hazır değil.');
     return;
   }
 
-  renderFeedback(result);
-});
+  cancelAnimationFrame(animationId);
 
-promptInput.addEventListener('input', () => {
-  if (promptInput.classList.contains('error')) {
-    resetState();
+  const render = async () => {
+    if (cameraFeed.readyState >= 2) {
+      adjustCanvasSize();
+      const faces = await model.estimateFaces({
+        input: cameraFeed,
+        flipHorizontal: true,
+        predictIrises: true
+      });
+
+      if (faces.length) {
+        const face = faces[0];
+        drawDebug(face);
+        updatePointer(face);
+        detectBlink(face);
+      } else {
+        fadeBlinkIndicator(false);
+      }
+    }
+    animationId = requestAnimationFrame(render);
+  };
+
+  render();
+}
+
+function adjustCanvasSize() {
+  const { videoWidth, videoHeight } = cameraFeed;
+  if (!videoWidth || !videoHeight) return;
+
+  if (debugCanvas.width !== videoWidth || debugCanvas.height !== videoHeight) {
+    debugCanvas.width = videoWidth;
+    debugCanvas.height = videoHeight;
+  }
+}
+
+function drawDebug(face) {
+  const keypoints = face.scaledMesh;
+  ctx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = 'rgba(90, 200, 250, 0.9)';
+  ctx.fillStyle = 'rgba(90, 200, 250, 0.25)';
+
+  drawEye(ctx, keypoints, LEFT_EYE_INDICES);
+  drawEye(ctx, keypoints, RIGHT_EYE_INDICES);
+}
+
+function drawEye(context, keypoints, indices) {
+  context.beginPath();
+  indices.forEach((index, idx) => {
+    const [x, y] = keypoints[index];
+    if (idx === 0) {
+      context.moveTo(x, y);
+    } else {
+      context.lineTo(x, y);
+    }
+  });
+  context.closePath();
+  context.fill();
+  context.stroke();
+}
+
+function updatePointer(face) {
+  const { videoWidth, videoHeight } = cameraFeed;
+  const stageRect = stage.getBoundingClientRect();
+  if (!stageRect.width || !stageRect.height) {
+    return;
+  }
+  const keypoints = face.scaledMesh;
+
+  const leftIris = averagePoint(LEFT_IRIS_INDICES.map((index) => keypoints[index]));
+  const rightIris = averagePoint(RIGHT_IRIS_INDICES.map((index) => keypoints[index]));
+  const iris = [(leftIris[0] + rightIris[0]) / 2, (leftIris[1] + rightIris[1]) / 2];
+
+  const normalizedX = iris[0] / videoWidth;
+  const normalizedY = iris[1] / videoHeight;
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+  targetX = clamp(normalizedX * stageRect.width, 16, stageRect.width - 16);
+  targetY = clamp(normalizedY * stageRect.height, 16, stageRect.height - 16);
+
+  pointerX += (targetX - pointerX) * SMOOTHING;
+  pointerY += (targetY - pointerY) * SMOOTHING;
+
+  pointer.style.left = `${pointerX}px`;
+  pointer.style.top = `${pointerY}px`;
+}
+
+function detectBlink(face) {
+  const keypoints = face.scaledMesh;
+  const leftEAR = eyeAspectRatio(keypoints, LEFT_EYE_INDICES);
+  const rightEAR = eyeAspectRatio(keypoints, RIGHT_EYE_INDICES);
+  const isBlink = leftEAR < BLINK_THRESHOLD && rightEAR < BLINK_THRESHOLD;
+
+  if (isBlink && !lastBlinkState) {
+    blinkStartTime = performance.now();
+  }
+
+  if (!isBlink && lastBlinkState) {
+    const duration = performance.now() - blinkStartTime;
+    if (duration >= BLINK_MIN_DURATION && duration <= BLINK_MAX_DURATION) {
+      registerBlink();
+    }
+  }
+
+  lastBlinkState = isBlink;
+  fadeBlinkIndicator(isBlink);
+}
+
+function eyeAspectRatio(keypoints, indices) {
+  const [p1, p2, p3, p4, p5, p6] = indices.map((index) => keypoints[index]);
+  const vertical1 = distance(p2, p6);
+  const vertical2 = distance(p3, p5);
+  const horizontal = distance(p1, p4);
+  return (vertical1 + vertical2) / (2 * horizontal);
+}
+
+function distance(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1]);
+}
+
+function averagePoint(points) {
+  const total = points.reduce(
+    (acc, point) => {
+      acc[0] += point[0];
+      acc[1] += point[1];
+      return acc;
+    },
+    [0, 0]
+  );
+  return [total[0] / points.length, total[1] / points.length];
+}
+
+function registerBlink() {
+  blinkStatus.textContent = 'Algılandı';
+  pointer.classList.add('active');
+  setTimeout(() => pointer.classList.remove('active'), 200);
+
+  const now = performance.now();
+  if (now - lastRightClick > 1000) {
+    triggerRightClick();
+    lastRightClick = now;
+  }
+}
+
+function triggerRightClick() {
+  clickStatus.textContent = 'Sağ tık gönderildi';
+  showContextMenu(pointerX, pointerY);
+  setTimeout(() => {
+    clickStatus.textContent = 'Hazır';
+  }, 1500);
+}
+
+function fadeBlinkIndicator(isVisible) {
+  if (isVisible) {
+    blinkIndicator.classList.add('visible');
+  } else {
+    blinkIndicator.classList.remove('visible');
+  }
+}
+
+function showContextMenu(x, y) {
+  const stageRect = stage.getBoundingClientRect();
+  const absoluteX = stageRect.left + x;
+  const absoluteY = stageRect.top + y;
+  const menuWidth = 220;
+  const menuHeight = 120;
+  const margin = 16;
+  const clampedX = Math.min(Math.max(absoluteX, margin), window.innerWidth - menuWidth - margin);
+  const clampedY = Math.min(Math.max(absoluteY, margin), window.innerHeight - menuHeight - margin);
+
+  contextMenu.style.left = `${clampedX}px`;
+  contextMenu.style.top = `${clampedY}px`;
+  contextMenu.classList.remove('hidden');
+}
+
+function hideContextMenu() {
+  contextMenu.classList.add('hidden');
+}
+
+cameraBtn.addEventListener('click', () => {
+  if (!stream) {
+    initCamera();
   }
 });
+
+calibrateBtn.addEventListener('click', () => {
+  clickStatus.textContent = 'Kalibrasyon';
+  centerPointer();
+  setTimeout(() => {
+    if (stream) {
+      clickStatus.textContent = 'Hazır';
+    }
+  }, 1200);
+});
+
+closeMenuBtn.addEventListener('click', hideContextMenu);
+document.addEventListener('click', (event) => {
+  if (!contextMenu.contains(event.target)) {
+    hideContextMenu();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    hideContextMenu();
+  }
+});
+
+window.addEventListener('resize', centerPointer);
+
+tf.setBackend('webgl')
+  .then(() => tf.ready())
+  .then(() => initModel())
+  .catch((error) => {
+    console.error('TensorFlow.js başlatılırken hata oluştu', error);
+    modelStatus.textContent = 'Yüklenemedi';
+  });
