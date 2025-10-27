@@ -3,77 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Koçu | 4006B Yapay Zeka Jüri Şovu</title>
+  <title>Göz Takibi ile Sanal Fare</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="glow"></div>
-  <div class="glow glow-2"></div>
-  <div class="container">
-    <header>
-      <h1>Prompt Koçu</h1>
-      <p class="subtitle">Yapay zekâ ile daha doğru iletişim kur, jüriyi ilk bakışta etkile!</p>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-copy">
+        <h1>Göz Hareketlerinle Fareyi Yönet</h1>
+        <p>
+          Kameranı aç, bakışlarınla imleci hareket ettir ve tek göz kırpmasıyla sağ tıkla.
+          Bu demo uygulama; yüz, göz ve iris takibi için TensorFlow.js ile MediaPipe FaceMesh modelini kullanır.
+        </p>
+      </div>
+      <div class="hero-status">
+        <div class="status-line">
+          <span class="label">Kamera</span>
+          <span id="cameraStatus" class="value">Hazırlanıyor...</span>
+        </div>
+        <div class="status-line">
+          <span class="label">Model</span>
+          <span id="modelStatus" class="value">Yükleniyor</span>
+        </div>
+        <div class="status-line">
+          <span class="label">Göz Kırpması</span>
+          <span id="blinkStatus" class="value">Algılanmadı</span>
+        </div>
+        <div class="status-line">
+          <span class="label">Sağ Tıklama</span>
+          <span id="clickStatus" class="value">Hazır</span>
+        </div>
+      </div>
     </header>
 
-    <main>
-      <section class="prompt-card">
-        <div class="card-header">
-          <h2>Prompunu Dinliyoruz</h2>
-          <span class="tag">AI Destekli Analiz</span>
-        </div>
-        <p class="helper-text">En az <strong>2</strong>, en fazla <strong>10</strong> kelime olacak şekilde yaz.</p>
-        <label class="visually-hidden" for="promptInput">Prompt</label>
-        <textarea id="promptInput" rows="2" maxlength="120" placeholder="En son ChatGPT'ye ne sordun? Buraya yaz, puanını öğren. Gerçekten iyi bir araştırmacı mısın? :)" aria-describedby="helper"></textarea>
-        <div id="helper" class="microcopy">Sorunu yapay zekânın anlayacağı şekilde yazmaya çalış.</div>
-        <button id="analyzeBtn" type="button">Analiz Et</button>
-        <p class="hint">Tüyolar mı lazım? Aşağıya bak, promptunu yapay zekâ nasıl görüyor öğren.</p>
+    <main class="content">
+      <section class="stage" id="stage">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+        <canvas id="debugCanvas"></canvas>
+        <div id="virtualPointer" aria-hidden="true"></div>
+        <div id="blinkIndicator" aria-hidden="true">👁️</div>
       </section>
 
-      <section id="feedback" class="feedback hidden" aria-live="polite">
-        <div class="score-panel">
-          <div class="score-circle">
-            <span id="scoreValue">0</span>
-          </div>
-          <div class="score-info">
-            <h3>Promp Puanın</h3>
-            <p id="scoreLabel">Hazır mısın?</p>
-          </div>
+      <aside class="sidebar">
+        <h2>Nasıl Çalışır?</h2>
+        <ol>
+          <li>"Kamerayı Aç" butonu ile kamera erişimine izin ver.</li>
+          <li>Ekranın ortasındaki noktaya bakarak birkaç saniye bekle.</li>
+          <li>Bakışların imleci hareket ettirir. Sağ tıklamak için gözünü bir kez kırp.</li>
+        </ol>
+
+        <div class="controls">
+          <button id="cameraBtn" type="button">Kamerayı Aç</button>
+          <button id="calibrateBtn" type="button" disabled>Kalibrasyon Noktası</button>
         </div>
 
-        <div class="progress">
-          <div id="progressBar" class="progress-bar"></div>
-        </div>
-
-        <div class="analysis">
-          <h3>Analiz Notları</h3>
-          <ul id="analysisList"></ul>
-        </div>
-
-        <div class="coach">
-          <div class="coach-card">
-            <h3>Yapay Zekâ Şunu Diyor</h3>
-            <p id="aiComment"></p>
-          </div>
-          <div class="coach-card">
-            <h3>Şöyle De Yazabilirdin</h3>
-            <p id="suggestion"></p>
-          </div>
-          <div class="coach-card">
-            <h3>Bir Tık Daha İyi Olmak İçin</h3>
-            <ul id="tips"></ul>
-          </div>
-        </div>
-      </section>
+        <p class="hint">
+          Sağ tıklama simülasyonu, gerçek işletim sistemi faresini değil; sayfadaki sanal imleci ve menüyü kontrol eder.
+        </p>
+      </aside>
     </main>
-
-    <footer>
-      <p>4006B TÜBİTAK Bilim Fuarı · Prompt koçu, doğru sorunun gücünü gösterir.</p>
-    </footer>
   </div>
 
-  <script src="script.js"></script>
+  <div id="contextMenu" class="context-menu hidden" role="dialog" aria-modal="true">
+    <p>Sağ tıklama yakalandı! 🚀</p>
+    <button id="closeMenuBtn" type="button">Tamam</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.12.0/dist/tf-core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.12.0/dist/tf-converter.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.12.0/dist/tf-backend-webgl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.min.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
