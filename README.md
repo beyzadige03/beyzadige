@@ -1,29 +1,28 @@
-# Prompt Koçu
+# Hikâye Sahnesi
 
-TÜBİTAK 4006B projesi için jüriyi ilk bakışta etkileyebilecek yapay zekâ destekli "prompt koçu" aracı. Bu küçük web uygulaması ile 2 ila 10 kelimelik kısa promptlarını analiz eder, puanlar ve daha etkili hale getirmek için öneriler üretir.
+Plotagon ve Vyond tarzı sahne düzenleme deneyimini tarayıcıya taşıyan hafif animasyon stüdyosu. Kod tabanı sadece HTML, CSS ve JavaScript ile yazıldı; ek kurulum gerektirmez.
 
 ## Özellikler
-- 🎯 **Anında Puanlama:** Kelime sayısı, bağlam, eylem fiili ve çıktı beklentisine göre 0-100 arası puan.
-- 💡 **Akıllı İpuçları:** Eksik olan noktaları tespit eder, kişiselleştirilmiş tüyolar verir.
-- ✏️ **Alternatif Prompt:** Aynı isteği daha iyi anlatan örnek bir cümle önerir.
-- 🧠 **AI Yorumu:** Yapay zekânın promptu nasıl gördüğünü anlatan yorum mesajı.
+- 🎬 **Sahne Yönetimi:** Zaman çizelgesi, başlık ve süre kontrolü, arka plan seçimi.
+- 🧑‍🤝‍🧑 **Karakter Kütüphanesi:** Ön tanımlı karakterleri sürüklemeden tek tıkla sahneye ekleme.
+- 😃 **Duygu ve Aksiyon Kontrolleri:** Her karakter için ifade ve hareket ayarları.
+- 💬 **Senaryo Editörü:** Ton seçimiyle birlikte replik ekleme, sahne bazlı diyalog listesi.
+- 🗂️ **Storyboard Çıktısı:** Tek tıkla sahnelerin özetini oluşturan kopyalanabilir storyboard.
 
-## Nasıl Kullanılır?
-1. Depoyu klonla veya dosyaları indir.
-   - Git kullanıyorsan:
-     ```bash
-     git clone https://github.com/<kullanici-adi>/beyzadige.git
-     cd beyzadige
-     ```
-     Yukarıdaki komutlardan sonra klasörde `index.html`, `script.js` ve `styles.css` dosyalarını görmelisin.
-   - GitHub arayüzünden indiriyorsan: Sayfada **Code** düğmesine bas ➜ **Download ZIP** seçeneğini seç ➜ indirdiğin ZIP dosyasını açtığında aynı dosyaların içeride bulunduğunu kontrol et.
-2. `index.html` dosyasını bir tarayıcıda aç.
-3. Metin kutusuna en az 2, en fazla 10 kelimeden oluşan promptunu yaz.
-4. "Analiz Et" düğmesine tıkla; puanını, yorumları ve ipuçlarını incele.
+## Başlangıç
+1. Depoyu indir veya klonla:
+   ```bash
+   git clone https://github.com/<kullanici-adi>/beyzadige.git
+   cd beyzadige
+   ```
+2. `index.html` dosyasını tarayıcıda aç.
+3. Yeni sahneler oluştur, karakter ve arka plan seç, diyalog ekle.
+4. "Storyboard oluştur" düğmesi ile tüm sahnelerin özetini al.
 
-## Geliştirme
-- Tasarım ve etkileşimler saf HTML, CSS ve JavaScript ile hazırlandı.
-- Ek bir paket kurmaya gerek yoktur.
-- İstersen farklı kriterler eklemek için `script.js` içinde yer alan `analysePrompt` fonksiyonunu genişletebilirsin.
+## Geliştirme Notları
+- Tasarım koyu temalı, cam yüzeyli paneller ve neon vurgular kullanır.
+- Karakterler ve arka planlar statik listeler halinde `script.js` içinde tanımlıdır.
+- Kod, erişilebilirlik için klavye ve ekran okuyucu etiketleri ile güçlendirildi.
+- Ek modüller veya derleme adımları olmadığı için canlı düzenleme yapmak kolaydır.
 
-Keyifli sunumlar! 🎉
+Keyifli animasyonlar! 🌟
