@@ -3,86 +3,157 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Delil Notları | Savcı Asistanı</title>
+  <title>Animasyon Stüdyosu | Öğrenciler için Film Yapımı</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="background-glow"></div>
-  <div class="background-glow glow-2"></div>
-
-  <div class="app">
-    <header class="app-header">
-      <p class="badge">Adli Teknoloji Aracı</p>
-      <h1>Delil Notları</h1>
-      <p class="lead">PDF formatındaki dosyaları yükleyin, sistem saniyeler içerisinde özet çıkarıp kritik bilgileri not alsın. Savcıların iş yükünü hafifletmek için tasarlandı.</p>
+  <div class="app-shell">
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">Dijital Hikâye Anlatımı</p>
+        <h1>Animasyon Stüdyosu</h1>
+        <p class="lead">
+          Öğrencileriniz kendi karakterlerini seçsin, sahnelerini hazırlasın, seslerini kaydetsin.
+          Üç karaktere kadar aynı sahnede buluşturarak kısa animasyon filmleri oluşturun.
+        </p>
+      </div>
+      <div class="header-actions">
+        <div class="action-buttons">
+          <button id="playAnimation" class="primary">Animasyonu Oynat</button>
+          <button id="resetStage" class="ghost">Sahneyi Sıfırla</button>
+        </div>
+        <p id="animationStatus" class="animation-status" aria-live="polite">Animasyona hazır.</p>
+      </div>
     </header>
 
-    <main class="content">
-      <section class="upload-card" aria-labelledby="uploadTitle">
-        <div class="card-header">
-          <h2 id="uploadTitle">Dosya Yükle</h2>
-          <span class="tag">PDF Analizi</span>
+    <main class="layout">
+      <section class="stage-panel" aria-label="Sahne Önizleme">
+        <div id="stage" class="stage" role="img" aria-label="Animasyon sahnesi">
+          <div class="stage-overlay"></div>
+          <div id="characterSlots" class="characters"></div>
         </div>
-        <p class="card-intro">Soruşturma dosyanızdaki PDF belgelerini yükleyin. Sistem belgeyi analiz ederek özet çıkarır, önemli tarihleri ve tutarları not eder.</p>
-
-        <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="PDF yükleme alanı">
-          <input type="file" id="pdfInput" accept="application/pdf" aria-label="PDF dosyası seç" hidden>
-          <div class="drop-content">
-            <div class="icon">📄</div>
-            <p><strong>PDF seçin</strong> veya sürükleyip bırakın</p>
-            <p class="hint">Azami 20 MB. Bir seferde tek dosya yüklenebilir.</p>
-            <button id="selectBtn" type="button">PDF Dosyası Seç</button>
-          </div>
+        <div class="stage-settings">
+          <h2>Sahne Arkaplanı</h2>
+          <p>Sahneye uygun bir atmosfer seçin.</p>
+          <div id="backgroundOptions" class="background-options" role="radiogroup" aria-label="Sahne arkaplanı seçenekleri"></div>
         </div>
-
-        <div class="status" id="statusMessage" aria-live="polite"></div>
       </section>
 
-      <section id="results" class="results hidden" aria-live="polite">
-        <div class="summary-card">
-          <div class="summary-header">
-            <h2>Belge Özeti</h2>
-            <span id="pageCount" class="summary-meta"></span>
-          </div>
-          <p id="summaryText" class="summary-text"></p>
+      <section class="controls" aria-label="Animasyon Ayarları">
+        <div class="control-card">
+          <header>
+            <h2>Karakterler</h2>
+            <p>En fazla üç karakter ekleyebilirsiniz.</p>
+          </header>
+          <div id="characterControls" class="character-controls"></div>
         </div>
 
-        <div class="grid">
-          <article class="note-card">
-            <h3>Önemli Bilgiler</h3>
-            <ul id="highlightList" class="list"></ul>
-          </article>
-          <article class="note-card">
-            <h3>Kilit Kavramlar</h3>
-            <div id="keywordChips" class="chips"></div>
-          </article>
-          <article class="note-card">
-            <h3>Hızlı Analiz</h3>
-            <ul id="quickStats" class="list"></ul>
-          </article>
+        <div class="control-card">
+          <header>
+            <h2>Sahne Senaryosu</h2>
+            <p>Sahnelerinizi planlayın ve sıraya koyun.</p>
+          </header>
+          <form id="sceneForm" class="scene-form">
+            <div class="field">
+              <label for="sceneTitle">Sahne Adı</label>
+              <input id="sceneTitle" name="sceneTitle" type="text" placeholder="Örneğin: Karakterler tanışıyor" required>
+            </div>
+            <div class="field">
+              <label for="sceneSummary">Kısa Açıklama</label>
+              <textarea id="sceneSummary" name="sceneSummary" rows="2" placeholder="Bu sahnede neler oluyor?" required></textarea>
+            </div>
+            <div class="field">
+              <label for="sceneDuration">Süre (saniye)</label>
+              <input id="sceneDuration" name="sceneDuration" type="number" min="3" max="30" value="8" required>
+            </div>
+            <button type="submit" class="primary full">Sahneyi Ekle</button>
+          </form>
+          <div>
+            <h3>Planlanan Sahneler</h3>
+            <ul id="sceneList" class="scene-list" aria-live="polite"></ul>
+          </div>
+        </div>
+
+        <div class="control-card">
+          <header>
+            <h2>Ses Kaydı</h2>
+            <p>Karakterler için diyalogları kaydedin.</p>
+          </header>
+          <div class="audio-controls">
+            <div class="audio-buttons">
+              <button id="startRecording" class="primary">Kaydı Başlat</button>
+              <button id="stopRecording" class="danger" disabled>Kaydı Durdur</button>
+            </div>
+            <p id="recordingStatus" class="recording-status" aria-live="polite">Hazır.</p>
+            <audio id="audioPlayback" controls class="audio-player" aria-label="Kayıtlı ses"></audio>
+            <a id="downloadLink" class="download-link" href="#" download="sahne-sesi.webm" hidden>Kaydı İndir</a>
+          </div>
         </div>
       </section>
     </main>
-
-    <footer class="app-footer">
-      <p>© 2024 Delil Notları · Adli süreçlerde hızlı bilgiye erişim için geliştirildi.</p>
-    </footer>
   </div>
 
-  <div id="loading" class="loading hidden" role="status" aria-live="polite">
-    <div class="spinner"></div>
-    <p>Belge analiz ediliyor...</p>
-  </div>
+  <template id="characterControlTemplate">
+    <article class="character-card" data-index="">
+      <header class="character-card__header">
+        <div class="character-icon" aria-hidden="true"></div>
+        <div>
+          <h3></h3>
+          <label class="toggle">
+            <input type="checkbox" class="character-active" checked>
+            <span>Aktif</span>
+          </label>
+        </div>
+      </header>
+      <div class="field-group">
+        <label>Karakter Seçimi
+          <select class="character-avatar"></select>
+        </label>
+        <label>Karakter Adı
+          <input type="text" class="character-name" placeholder="Karakter adı">
+        </label>
+      </div>
+      <div class="field-group">
+        <label>Renk
+          <input type="color" class="character-color">
+        </label>
+        <label>Hareket
+          <select class="character-pose">
+            <option value="pose-idle">Bekleme</option>
+            <option value="pose-wave">El Sallama</option>
+            <option value="pose-bounce">Zıplama</option>
+            <option value="pose-slide">Sahneye Giriş</option>
+          </select>
+        </label>
+      </div>
+      <div class="field-group">
+        <label>Duygu
+          <select class="character-expression">
+            <option value="happy">Mutlu</option>
+            <option value="thinking">Düşünen</option>
+            <option value="surprised">Şaşırmış</option>
+          </select>
+        </label>
+        <label>Konuşma Balonu
+          <input type="text" class="character-dialogue" placeholder="Diyalog yazın">
+        </label>
+      </div>
+    </article>
+  </template>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    if (window['pdfjsLib']) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-  </script>
+  <template id="sceneListItemTemplate">
+    <li class="scene-item">
+      <div>
+        <p class="scene-name"></p>
+        <p class="scene-details"></p>
+      </div>
+      <button class="ghost remove-scene" type="button">Kaldır</button>
+    </li>
+  </template>
+
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,347 +1,542 @@
-const pdfInput = document.getElementById('pdfInput');
-const dropZone = document.getElementById('dropZone');
-const selectBtn = document.getElementById('selectBtn');
-const statusMessage = document.getElementById('statusMessage');
-const resultsSection = document.getElementById('results');
-const summaryText = document.getElementById('summaryText');
-const highlightList = document.getElementById('highlightList');
-const keywordChips = document.getElementById('keywordChips');
-const quickStats = document.getElementById('quickStats');
-const loadingOverlay = document.getElementById('loading');
-const pageCountLabel = document.getElementById('pageCount');
+const stage = document.getElementById('stage');
+const characterSlots = document.getElementById('characterSlots');
+const backgroundOptionsContainer = document.getElementById('backgroundOptions');
+const characterControlsContainer = document.getElementById('characterControls');
+const characterControlTemplate = document.getElementById('characterControlTemplate');
+const playAnimationButton = document.getElementById('playAnimation');
+const resetStageButton = document.getElementById('resetStage');
+const sceneForm = document.getElementById('sceneForm');
+const sceneList = document.getElementById('sceneList');
+const sceneListItemTemplate = document.getElementById('sceneListItemTemplate');
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-const STOP_WORDS = new Set([
-  've', 'veya', 'bir', 'iki', 'üç', 'ile', 'ama', 'fakat', 'ancak', 'gibi', 'olan', 'olanlar', 'olanları',
-  'olarak', 'üzerine', 'hakkında', 'şu', 'bu', 'şey', 'çok', 'daha', 'ise', 'için', 'göre', 'de', 'da',
-  'ki', 'değil', 'her', 'en', 'mi', 'mu', 'mü', 'mı', 'ne', 'nasıl', 'neden', 'hangi', 'var', 'yok',
-  'olan', 'birkaç', 'kez', 'olarak', 'ise', 'çünkü', 'ancak', 'hem', 'ya', 'ile', 'et', 'ettı', 'etti',
-  'ettik', 'ettiğini', 'ettikleri', 'ettikten', 'görev', 'bu', 'şu', 'o', 'olarak', 'vardır', 'olan', 'tarafından',
-  'soruşturma', 'dosya', 'dosyası', 'belge', 'belgesi', 'pdf', 'savcı', 'savcılık', 'davaya', 'dava'
-]);
+const startRecordingButton = document.getElementById('startRecording');
+const stopRecordingButton = document.getElementById('stopRecording');
+const recordingStatus = document.getElementById('recordingStatus');
+const audioPlayback = document.getElementById('audioPlayback');
+const downloadLink = document.getElementById('downloadLink');
+const animationStatus = document.getElementById('animationStatus');
 
-function showStatus(message, type = '') {
-  statusMessage.textContent = message;
-  statusMessage.className = `status${type ? ` ${type}` : ''}`;
+const backgrounds = [
+  {
+    id: 'sunset',
+    label: 'Gün Batımı',
+    description: 'Sıcak tonlarda akşamüstü ışığı',
+    style: 'linear-gradient(180deg, #ff9a8b 0%, #ff6a88 50%, #d66d75 100%)'
+  },
+  {
+    id: 'space',
+    label: 'Uzay Üssü',
+    description: 'Galaksi manzaralı bilim kurgu sahnesi',
+    style: 'radial-gradient(circle at 30% 20%, rgba(76, 201, 240, 0.35), transparent 70%), #0b1026'
+  },
+  {
+    id: 'forest',
+    label: 'Orman Sahnesi',
+    description: 'Doğal ve sakin bir ortam',
+    style: 'linear-gradient(160deg, #8fd3f4 0%, #84fab0 100%)'
+  },
+  {
+    id: 'stage',
+    label: 'Sahne Işıkları',
+    description: 'Spot ışıklarıyla sahne atmosferi',
+    style: 'radial-gradient(circle at 50% 0%, rgba(255, 221, 89, 0.36), transparent 70%), #1f1147'
+  }
+];
+
+const poseClasses = ['pose-idle', 'pose-wave', 'pose-bounce', 'pose-slide'];
+
+const characterPresets = [
+  { id: 'explorer', name: 'Kaşif', emoji: '🧭', defaultColor: '#4cc9f0' },
+  { id: 'scientist', name: 'Bilim İnsanı', emoji: '🧪', defaultColor: '#ffd166' },
+  { id: 'artist', name: 'Sanatçı', emoji: '🎨', defaultColor: '#ff7b54' },
+  { id: 'robot', name: 'Robot', emoji: '🤖', defaultColor: '#c77dff' },
+  { id: 'astronaut', name: 'Astronot', emoji: '🧑‍🚀', defaultColor: '#5e60ce' },
+  { id: 'storyteller', name: 'Anlatıcı', emoji: '📚', defaultColor: '#4caf50' }
+];
+
+const createId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+};
+
+const defaultCharacters = () => [
+  {
+    active: true,
+    presetId: 'explorer',
+    name: 'Karakter 1',
+    color: '#4cc9f0',
+    pose: 'pose-idle',
+    expression: 'happy',
+    dialogue: 'Merhaba! Ben hazırım.'
+  },
+  {
+    active: true,
+    presetId: 'scientist',
+    name: 'Karakter 2',
+    color: '#ffd166',
+    pose: 'pose-wave',
+    expression: 'thinking',
+    dialogue: 'Bir planım var!'
+  },
+  {
+    active: false,
+    presetId: 'artist',
+    name: 'Karakter 3',
+    color: '#ff7b54',
+    pose: 'pose-bounce',
+    expression: 'surprised',
+    dialogue: 'Harika bir fikir!'
+  }
+];
+
+let characters = defaultCharacters();
+let selectedBackground = backgrounds[0].id;
+let scenes = [];
+
+let mediaRecorder;
+let recordedChunks = [];
+let audioBlobUrl;
+let animationTimeouts = [];
+
+function setAnimationStatus(message) {
+  if (animationStatus) {
+    animationStatus.textContent = message;
+  }
 }
 
-function toggleLoading(show) {
-  loadingOverlay.classList.toggle('hidden', !show);
+function clearAnimationQueue() {
+  animationTimeouts.forEach((timeoutId) => {
+    clearTimeout(timeoutId);
+  });
+  animationTimeouts = [];
 }
 
-function resetResults() {
-  resultsSection.classList.add('hidden');
-  summaryText.textContent = '';
-  highlightList.innerHTML = '';
-  keywordChips.innerHTML = '';
-  quickStats.innerHTML = '';
-  pageCountLabel.textContent = '';
+function resetCharacterAnimations() {
+  Array.from(characterSlots.children).forEach((element) => {
+    element.classList.remove('is-animating');
+
+    const avatar = element.querySelector('.character-avatar');
+    const dialogue = element.querySelector('.dialogue');
+
+    if (avatar) {
+      avatar.classList.remove(...poseClasses);
+    }
+
+    if (dialogue) {
+      dialogue.classList.remove('show-dialogue');
+    }
+  });
 }
 
-function isValidFile(file) {
-  if (!file) {
-    showStatus('Dosya seçilmedi.', 'error');
-    return false;
-  }
-
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showStatus('Lütfen sadece PDF uzantılı dosyalar yükleyin.', 'error');
-    return false;
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    showStatus('Dosya boyutu 20 MB sınırını aşıyor.', 'error');
-    return false;
-  }
-
-  return true;
+function getPreset(presetId) {
+  return characterPresets.find((preset) => preset.id === presetId) ?? characterPresets[0];
 }
 
-async function extractTextFromPDF(arrayBuffer) {
-  if (!window.pdfjsLib) {
-    throw new Error('PDF.js kütüphanesi yüklenemedi.');
-  }
+function setBackground(backgroundId) {
+  const background = backgrounds.find((item) => item.id === backgroundId) ?? backgrounds[0];
+  selectedBackground = background.id;
+  stage.style.background = background.style;
 
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    const strings = content.items.map((item) => item.str);
-    fullText += ` ${strings.join(' ')}`;
-  }
-
-  return { text: fullText, pageCount: pdf.numPages };
+  Array.from(backgroundOptionsContainer.children).forEach((option) => {
+    option.classList.toggle('active', option.dataset.id === selectedBackground);
+    const input = option.querySelector('input');
+    if (input) {
+      input.checked = input.value === selectedBackground;
+    }
+  });
 }
 
-function normaliseText(text) {
-  return text
-    .replace(/\u0000/g, ' ')
-    .replace(/[\r\f\t]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+function createBackgroundOptions() {
+  backgrounds.forEach((background, index) => {
+    const option = document.createElement('label');
+    option.className = 'background-option';
+    option.dataset.id = background.id;
+    option.tabIndex = 0;
 
-function splitSentences(text) {
-  if (!text) {
-    return [];
-  }
-  return text.match(/[^.!?]+[.!?]?/g) || [];
-}
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'stageBackground';
+    input.value = background.id;
+    input.checked = index === 0;
 
-function buildSummary(sentences) {
-  if (!sentences.length) {
-    return 'Belgeden anlamlı bir cümle çıkarılamadı.';
-  }
+    const preview = document.createElement('div');
+    preview.className = 'background-option__preview';
+    preview.style.background = background.style;
 
-  const sentenceScores = [];
-  const wordFrequencies = new Map();
+    const details = document.createElement('div');
+    const title = document.createElement('p');
+    title.textContent = background.label;
+    title.style.fontWeight = '600';
+    const description = document.createElement('p');
+    description.textContent = background.description;
+    description.style.fontSize = '0.9rem';
+    description.style.color = 'var(--text-muted)';
 
-  sentences.forEach((sentence) => {
-    const words = (sentence.toLowerCase().match(/[\p{L}0-9']+/gu) || [])
-      .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
+    details.append(title, description);
+    option.append(input, preview, details);
 
-    words.forEach((word) => {
-      const current = wordFrequencies.get(word) || 0;
-      wordFrequencies.set(word, current + 1);
+    const selectBackground = () => setBackground(background.id);
+    option.addEventListener('click', selectBackground);
+    option.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectBackground();
+      }
     });
+
+    backgroundOptionsContainer.appendChild(option);
   });
 
-  const maxFrequency = Math.max(...wordFrequencies.values(), 1);
-
-  sentences.forEach((sentence, index) => {
-    const words = (sentence.toLowerCase().match(/[\p{L}0-9']+/gu) || [])
-      .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
-
-    const score = words.reduce((total, word) => total + (wordFrequencies.get(word) || 0) / maxFrequency, 0);
-    sentenceScores.push({ index, sentence: sentence.trim(), score });
-  });
-
-  sentenceScores.sort((a, b) => b.score - a.score);
-  const summaryCount = Math.min(5, Math.max(2, Math.round(sentences.length / 6)));
-  const selected = sentenceScores.slice(0, summaryCount).sort((a, b) => a.index - b.index);
-
-  return selected.map((item) => item.sentence).join(' ');
+  setBackground(selectedBackground);
 }
 
-function extractEntities(text) {
-  const dates = new Set();
-  const amounts = new Set();
-  const caseNumbers = new Set();
-  const names = new Set();
+function renderCharactersOnStage() {
+  characterSlots.innerHTML = '';
 
-  const datePatterns = [
-    /\b\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4}\b/g,
-    /\b\d{4}-\d{2}-\d{2}\b/g,
-    /\b\d{1,2}\s+(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)\s+\d{4}\b/gi
-  ];
-  datePatterns.forEach((regex) => {
-    const matches = text.match(regex);
-    if (matches) {
-      matches.forEach((match) => dates.add(match));
+  characters.forEach((character, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'character';
+    wrapper.dataset.index = index.toString();
+    if (!character.active) {
+      wrapper.classList.add('inactive');
     }
-  });
+    wrapper.style.background = `linear-gradient(180deg, ${character.color}33 0%, rgba(12, 15, 28, 0.72) 100%)`;
 
-  const amountMatches = text.match(/\b\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?\s*(?:tl|₺|türk lirası|usd|dolar|euro|€)\b/gi);
-  if (amountMatches) {
-    amountMatches.forEach((match) => amounts.add(match));
-  }
+    const avatar = document.createElement('span');
+    avatar.className = 'character-avatar';
+    avatar.textContent = getPreset(character.presetId).emoji;
 
-  const caseMatches = text.match(/\b\d{4}\/\d{1,4}\b/g);
-  if (caseMatches) {
-    caseMatches.forEach((match) => caseNumbers.add(match));
-  }
+    const name = document.createElement('p');
+    name.className = 'character-name';
+    name.textContent = character.name || `Karakter ${index + 1}`;
 
-  const nameMatches = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)\b/g);
-  if (nameMatches) {
-    nameMatches.forEach((match) => names.add(match));
-  }
-
-  return {
-    dates: Array.from(dates).slice(0, 6),
-    amounts: Array.from(amounts).slice(0, 6),
-    caseNumbers: Array.from(caseNumbers).slice(0, 6),
-    names: Array.from(names).slice(0, 6)
-  };
-}
-
-function buildHighlights(entities) {
-  const highlights = [];
-
-  if (entities.dates.length) {
-    highlights.push(`Tespit edilen tarihler: ${entities.dates.join(', ')}`);
-  }
-
-  if (entities.amounts.length) {
-    highlights.push(`Finansal kayıtlar: ${entities.amounts.join(', ')}`);
-  }
-
-  if (entities.caseNumbers.length) {
-    highlights.push(`Dosya / karar numaraları: ${entities.caseNumbers.join(', ')}`);
-  }
-
-  if (entities.names.length) {
-    highlights.push(`Olası kişi veya kurum isimleri: ${entities.names.join(', ')}`);
-  }
-
-  if (!highlights.length) {
-    highlights.push('Belgede açıkça ayrıştırılabilen kritik kayıt bulunamadı. Manuel gözden geçirme önerilir.');
-  }
-
-  return highlights;
-}
-
-function extractKeywords(text) {
-  const words = text.toLowerCase().match(/[\p{L}0-9']+/gu) || [];
-  const frequencies = new Map();
-
-  words.forEach((word) => {
-    if (word.length <= 3 || STOP_WORDS.has(word)) {
-      return;
+    const dialogue = document.createElement('div');
+    dialogue.className = 'dialogue';
+    if (character.expression === 'thinking') {
+      dialogue.classList.add('thinking');
+    } else if (character.expression === 'surprised') {
+      dialogue.classList.add('surprised');
     }
-    const current = frequencies.get(word) || 0;
-    frequencies.set(word, current + 1);
+    dialogue.textContent = character.dialogue || '...';
+
+    wrapper.append(avatar, name, dialogue);
+    characterSlots.appendChild(wrapper);
   });
 
-  const sorted = Array.from(frequencies.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
+  resetCharacterAnimations();
 
-  return sorted;
+  if (!stage.classList.contains('is-playing')) {
+    if (characters.some((character) => character.active)) {
+      setAnimationStatus('Animasyona hazır.');
+    } else {
+      setAnimationStatus('Animasyon için en az bir karakteri aktif hale getirin.');
+    }
+  }
 }
 
-function buildQuickStats(text, pageCount, entities) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const sentences = splitSentences(text);
-  const readingMinutes = Math.max(1, Math.round(words.length / 180));
-  const highlightTotal = entities.dates.length + entities.amounts.length + entities.caseNumbers.length + entities.names.length;
+function createCharacterControl(character, index) {
+  const clone = characterControlTemplate.content.firstElementChild.cloneNode(true);
+  clone.dataset.index = index.toString();
 
-  return [
-    `Sayfa sayısı: ${pageCount}`,
-    `Kelime sayısı: ${words.length}`,
-    `Cümle sayısı: ${sentences.length}`,
-    `Tahmini okuma süresi: ${readingMinutes} dakika`,
-    `Otomatik yakalanan kritik kayıtlar: ${highlightTotal}`
-  ];
+  const icon = clone.querySelector('.character-icon');
+  const title = clone.querySelector('h3');
+  const activeToggle = clone.querySelector('.character-active');
+  const avatarSelect = clone.querySelector('.character-avatar');
+  const nameInput = clone.querySelector('.character-name');
+  const colorInput = clone.querySelector('.character-color');
+  const poseSelect = clone.querySelector('.character-pose');
+  const expressionSelect = clone.querySelector('.character-expression');
+  const dialogueInput = clone.querySelector('.character-dialogue');
+
+  title.textContent = `Karakter ${index + 1}`;
+  icon.textContent = getPreset(character.presetId).emoji;
+  activeToggle.checked = character.active;
+
+  characterPresets.forEach((preset) => {
+    const option = document.createElement('option');
+    option.value = preset.id;
+    option.textContent = `${preset.emoji} ${preset.name}`;
+    if (preset.id === character.presetId) {
+      option.selected = true;
+    }
+    avatarSelect.appendChild(option);
+  });
+
+  nameInput.value = character.name;
+  colorInput.value = character.color;
+  poseSelect.value = character.pose;
+  expressionSelect.value = character.expression;
+  dialogueInput.value = character.dialogue;
+
+  activeToggle.addEventListener('change', (event) => {
+    characters[index].active = event.target.checked;
+    renderCharactersOnStage();
+  });
+
+  avatarSelect.addEventListener('change', (event) => {
+    const previousPreset = getPreset(characters[index].presetId);
+    const previousColor = characters[index].color;
+    const selectedPreset = getPreset(event.target.value);
+
+    characters[index].presetId = selectedPreset.id;
+    icon.textContent = selectedPreset.emoji;
+
+    if (previousColor === previousPreset.defaultColor) {
+      characters[index].color = selectedPreset.defaultColor;
+      colorInput.value = selectedPreset.defaultColor;
+    }
+
+    renderCharactersOnStage();
+  });
+
+  nameInput.addEventListener('input', (event) => {
+    characters[index].name = event.target.value || `Karakter ${index + 1}`;
+    renderCharactersOnStage();
+  });
+
+  colorInput.addEventListener('input', (event) => {
+    characters[index].color = event.target.value;
+    renderCharactersOnStage();
+  });
+
+  poseSelect.addEventListener('change', (event) => {
+    characters[index].pose = event.target.value;
+  });
+
+  expressionSelect.addEventListener('change', (event) => {
+    characters[index].expression = event.target.value;
+    renderCharactersOnStage();
+  });
+
+  dialogueInput.addEventListener('input', (event) => {
+    characters[index].dialogue = event.target.value;
+    renderCharactersOnStage();
+  });
+
+  return clone;
 }
 
-function renderList(listElement, items) {
-  listElement.innerHTML = '';
-  items.forEach((item) => {
-    const li = document.createElement('li');
-    li.textContent = item;
-    listElement.appendChild(li);
+function renderCharacterControls() {
+  characterControlsContainer.innerHTML = '';
+  characters.forEach((character, index) => {
+    const control = createCharacterControl(character, index);
+    characterControlsContainer.appendChild(control);
   });
 }
 
-function renderChips(container, items) {
-  container.innerHTML = '';
-  if (!items.length) {
-    const empty = document.createElement('p');
-    empty.className = 'hint';
-    empty.textContent = 'Anahtar kelime çıkarılamadı.';
-    container.appendChild(empty);
+function playAnimation() {
+  const characterElements = Array.from(characterSlots.children);
+  if (!characterElements.length) {
+    setAnimationStatus('Animasyon için sahneye karakter ekleyin.');
     return;
   }
 
-  items.forEach((item) => {
-    const span = document.createElement('span');
-    span.className = 'chip';
-    span.textContent = item;
-    container.appendChild(span);
+  const activeElements = characterElements.filter((element) => {
+    const index = Number(element.dataset.index);
+    return characters[index]?.active;
   });
-}
 
-function renderResults(analysis) {
-  summaryText.textContent = analysis.summary;
-  pageCountLabel.textContent = `${analysis.pageCount} sayfa`;
-  renderList(highlightList, analysis.highlights);
-  renderChips(keywordChips, analysis.keywords);
-  renderList(quickStats, analysis.quickStats);
-  resultsSection.classList.remove('hidden');
-}
-
-async function handleFile(file) {
-  resetResults();
-
-  if (!isValidFile(file)) {
+  if (!activeElements.length) {
+    setAnimationStatus('Animasyon için en az bir karakteri aktif hale getirin.');
+    resetCharacterAnimations();
+    stage.classList.remove('is-playing');
     return;
   }
 
-  showStatus('Dosya alındı, analiz başlatılıyor...', '');
-  toggleLoading(true);
+  clearAnimationQueue();
+  resetCharacterAnimations();
+
+  stage.classList.remove('is-playing');
+  void stage.offsetWidth;
+  stage.classList.add('is-playing');
+  playAnimationButton.disabled = true;
+  setAnimationStatus('Animasyon oynatılıyor...');
+
+  const highlightDelay = 550;
+
+  activeElements.forEach((element, order) => {
+    const index = Number(element.dataset.index);
+    const avatar = element.querySelector('.character-avatar');
+    const dialogue = element.querySelector('.dialogue');
+    const poseClass = characters[index].pose;
+
+    if (avatar) {
+      avatar.classList.remove(...poseClasses);
+    }
+
+    const startTimeout = setTimeout(() => {
+      element.classList.add('is-animating');
+      if (dialogue) {
+        dialogue.classList.add('show-dialogue');
+      }
+      if (avatar) {
+        void avatar.offsetWidth;
+        avatar.classList.add(poseClass);
+      }
+    }, order * highlightDelay);
+
+    animationTimeouts.push(startTimeout);
+  });
+
+  const animationDuration = Math.max(3200, activeElements.length * highlightDelay + 1800);
+
+  const finalizeTimeout = setTimeout(() => {
+    resetCharacterAnimations();
+    stage.classList.remove('is-playing');
+    playAnimationButton.disabled = false;
+    setAnimationStatus('Animasyon tamamlandı.');
+    clearAnimationQueue();
+  }, animationDuration);
+
+  animationTimeouts.push(finalizeTimeout);
+}
+
+function handleSceneFormSubmit(event) {
+  event.preventDefault();
+  const formData = new FormData(sceneForm);
+  const title = formData.get('sceneTitle').toString().trim();
+  const summary = formData.get('sceneSummary').toString().trim();
+  const duration = Number(formData.get('sceneDuration'));
+
+  if (!title || !summary || Number.isNaN(duration)) {
+    return;
+  }
+
+  const snapshotDialogues = characters
+    .filter((character) => character.active && character.dialogue)
+    .map((character) => `${character.name}: "${character.dialogue}"`);
+
+  scenes.push({
+    id: createId(),
+    title,
+    summary,
+    duration,
+    backgroundId: selectedBackground,
+    dialogues: snapshotDialogues
+  });
+
+  renderScenes();
+  sceneForm.reset();
+  sceneForm.querySelector('#sceneDuration').value = '8';
+}
+
+function renderScenes() {
+  sceneList.innerHTML = '';
+
+  if (!scenes.length) {
+    const empty = document.createElement('li');
+    empty.textContent = 'Henüz sahne eklenmedi.';
+    empty.style.color = 'var(--text-muted)';
+    sceneList.appendChild(empty);
+    return;
+  }
+
+  scenes.forEach((scene) => {
+    const element = sceneListItemTemplate.content.firstElementChild.cloneNode(true);
+    const name = element.querySelector('.scene-name');
+    const details = element.querySelector('.scene-details');
+    const removeButton = element.querySelector('.remove-scene');
+
+    const backgroundLabel = backgrounds.find((bg) => bg.id === scene.backgroundId)?.label ?? '';
+    const dialogueSummary = scene.dialogues.length
+      ? scene.dialogues.join(' · ')
+      : 'Diyalog eklenmedi.';
+
+    name.textContent = scene.title;
+    details.innerHTML = `
+      <span>${scene.summary}</span>
+      <span class="scene-meta">${scene.duration} saniye · ${backgroundLabel} · ${dialogueSummary}</span>
+    `;
+
+    removeButton.addEventListener('click', () => {
+      scenes = scenes.filter((item) => item.id !== scene.id);
+      renderScenes();
+    });
+
+    sceneList.appendChild(element);
+  });
+}
+
+function resetStage() {
+  clearAnimationQueue();
+  resetCharacterAnimations();
+  stage.classList.remove('is-playing');
+  playAnimationButton.disabled = false;
+
+  characters = defaultCharacters();
+  selectedBackground = backgrounds[0].id;
+  scenes = [];
+
+  renderCharacterControls();
+  renderCharactersOnStage();
+  renderScenes();
+  setBackground(selectedBackground);
+  setAnimationStatus('Animasyona hazır.');
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    recordingStatus.textContent = 'Tarayıcınız mikrofon kaydını desteklemiyor.';
+    return;
+  }
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const { text, pageCount } = await extractTextFromPDF(arrayBuffer);
-    const cleanedText = normaliseText(text);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recordedChunks = [];
 
-    if (!cleanedText) {
-      showStatus('Belgeden metin çıkarılamadı. Tarama kalitesini kontrol edin.', 'error');
-      return;
-    }
-
-    const sentences = splitSentences(cleanedText);
-    const summary = buildSummary(sentences);
-    const entities = extractEntities(cleanedText);
-    const highlights = buildHighlights(entities);
-    const keywords = extractKeywords(cleanedText);
-    const stats = buildQuickStats(cleanedText, pageCount, entities);
-
-    renderResults({
-      summary,
-      pageCount,
-      highlights,
-      keywords,
-      quickStats: stats
+    mediaRecorder.addEventListener('dataavailable', (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
     });
 
-    showStatus(`"${file.name}" başarıyla analiz edildi.`, 'success');
+    mediaRecorder.addEventListener('stop', () => {
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+      if (audioBlobUrl) {
+        URL.revokeObjectURL(audioBlobUrl);
+      }
+      audioBlobUrl = URL.createObjectURL(blob);
+      audioPlayback.src = audioBlobUrl;
+      audioPlayback.load();
+      downloadLink.href = audioBlobUrl;
+      downloadLink.hidden = false;
+      recordingStatus.textContent = 'Kayıt tamamlandı. Dinleyebilir veya indirebilirsiniz.';
+
+      stream.getTracks().forEach((track) => track.stop());
+      stopRecordingButton.disabled = true;
+      startRecordingButton.disabled = false;
+    });
+
+    mediaRecorder.start();
+    recordingStatus.textContent = 'Kayıt yapılıyor...';
+    startRecordingButton.disabled = true;
+    stopRecordingButton.disabled = false;
+    downloadLink.hidden = true;
+    audioPlayback.removeAttribute('src');
+    audioPlayback.load();
   } catch (error) {
     console.error(error);
-    showStatus('Dosya analiz edilirken bir hata oluştu.', 'error');
-  } finally {
-    toggleLoading(false);
+    recordingStatus.textContent = 'Mikrofon erişimi alınamadı.';
   }
 }
 
-selectBtn.addEventListener('click', () => {
-  pdfInput.click();
-});
-
-dropZone.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    pdfInput.click();
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    recordingStatus.textContent = 'Kaydedilen ses hazırlanıyor...';
   }
-});
+}
 
-pdfInput.addEventListener('change', (event) => {
-  const [file] = event.target.files;
-  if (file) {
-    handleFile(file);
-  }
-});
+playAnimationButton.addEventListener('click', playAnimation);
+resetStageButton.addEventListener('click', resetStage);
+sceneForm.addEventListener('submit', handleSceneFormSubmit);
+startRecordingButton.addEventListener('click', startRecording);
+stopRecordingButton.addEventListener('click', stopRecording);
 
-dropZone.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', (event) => {
-  event.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = event.dataTransfer.files[0];
-  if (file) {
-    handleFile(file);
-  }
-});
-
-resultsSection.classList.add('hidden');
-showStatus('Hazır. PDF yüklediğinizde otomatik analiz başlayacak.');
+createBackgroundOptions();
+renderCharacterControls();
+renderCharactersOnStage();
+renderScenes();
