@@ -3,86 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Delil Notları | Savcı Asistanı</title>
+  <title>Hikâye Sahnesi | Animasyon Stüdyosu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="background-glow"></div>
-  <div class="background-glow glow-2"></div>
+  <div class="halo halo-1"></div>
+  <div class="halo halo-2"></div>
+  <div class="halo halo-3"></div>
 
-  <div class="app">
-    <header class="app-header">
-      <p class="badge">Adli Teknoloji Aracı</p>
-      <h1>Delil Notları</h1>
-      <p class="lead">PDF formatındaki dosyaları yükleyin, sistem saniyeler içerisinde özet çıkarıp kritik bilgileri not alsın. Savcıların iş yükünü hafifletmek için tasarlandı.</p>
+  <div class="studio-app">
+    <header class="top-bar" role="banner">
+      <div class="brand">
+        <span class="logo">🎬</span>
+        <div>
+          <h1>Hikâye Sahnesi</h1>
+          <p>Plotagon ve Vyond esintili web tabanlı animasyon stüdyosu</p>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-item">
+          <span class="label">Toplam sahne</span>
+          <strong id="sceneCount">0</strong>
+        </div>
+        <div class="meta-item">
+          <span class="label">Storyboard durumu</span>
+          <strong id="storyboardStatus">Hazır değil</strong>
+        </div>
+      </div>
     </header>
 
-    <main class="content">
-      <section class="upload-card" aria-labelledby="uploadTitle">
-        <div class="card-header">
-          <h2 id="uploadTitle">Dosya Yükle</h2>
-          <span class="tag">PDF Analizi</span>
-        </div>
-        <p class="card-intro">Soruşturma dosyanızdaki PDF belgelerini yükleyin. Sistem belgeyi analiz ederek özet çıkarır, önemli tarihleri ve tutarları not eder.</p>
+    <main class="workspace" role="main">
+      <aside class="panel scene-panel" aria-label="Sahne ve kütüphane yönetimi">
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Sahneler</h2>
+            <button id="addSceneBtn" type="button" class="ghost-btn">+ Yeni sahne</button>
+          </div>
+          <p class="panel-hint">Zaman çizelgesindeki sahneleri seçerek düzenleyin, sıralama otomatik yapılır.</p>
+          <div id="sceneList" class="scene-list" role="tablist" aria-label="Sahne listesi"></div>
+        </section>
 
-        <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="PDF yükleme alanı">
-          <input type="file" id="pdfInput" accept="application/pdf" aria-label="PDF dosyası seç" hidden>
-          <div class="drop-content">
-            <div class="icon">📄</div>
-            <p><strong>PDF seçin</strong> veya sürükleyip bırakın</p>
-            <p class="hint">Azami 20 MB. Bir seferde tek dosya yüklenebilir.</p>
-            <button id="selectBtn" type="button">PDF Dosyası Seç</button>
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Arka Planlar</h2>
+          </div>
+          <p class="panel-hint">Bir sahnenin atmosferini tek tıkla değiştirin.</p>
+          <div id="backgroundGrid" class="background-grid" role="list"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Karakter Kütüphanesi</h2>
+          </div>
+          <p class="panel-hint">Karakter eklemek için kartlara tıklayın.</p>
+          <div id="characterLibrary" class="character-library" role="list"></div>
+        </section>
+      </aside>
+
+      <section class="stage-panel" aria-live="polite">
+        <div class="stage-toolbar">
+          <div class="toolbar-group">
+            <label for="sceneTitleInput" class="toolbar-label">Aktif sahne</label>
+            <input id="sceneTitleInput" type="text" placeholder="Sahne başlığı" aria-describedby="sceneTitleHelp">
+            <span id="sceneTitleHelp" class="toolbar-hint">Storyboard çıktısında görünecek.</span>
+          </div>
+          <div class="toolbar-group">
+            <label for="sceneDurationInput" class="toolbar-label">Süre</label>
+            <input id="sceneDurationInput" type="range" min="3" max="20" value="8" aria-describedby="sceneDurationLabel">
+            <span id="sceneDurationLabel" class="toolbar-badge">8 sn</span>
           </div>
         </div>
 
-        <div class="status" id="statusMessage" aria-live="polite"></div>
+        <div id="stageCanvas" class="stage" role="img" aria-label="Sahne önizlemesi">
+          <p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>
+        </div>
+
+        <div class="actor-controls" id="actorControls" aria-live="polite"></div>
+
+        <div class="timeline" aria-label="Zaman çizelgesi">
+          <div id="sceneTimeline" class="timeline-track"></div>
+        </div>
       </section>
 
-      <section id="results" class="results hidden" aria-live="polite">
-        <div class="summary-card">
-          <div class="summary-header">
-            <h2>Belge Özeti</h2>
-            <span id="pageCount" class="summary-meta"></span>
+      <aside class="panel director-panel" aria-label="Senaryo ve storyboard araçları">
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Senaryo</h2>
           </div>
-          <p id="summaryText" class="summary-text"></p>
-        </div>
+          <form id="dialogueForm" class="dialogue-form">
+            <label for="dialogueCharacterSelect">Konuşmacı</label>
+            <select id="dialogueCharacterSelect"></select>
 
-        <div class="grid">
-          <article class="note-card">
-            <h3>Önemli Bilgiler</h3>
-            <ul id="highlightList" class="list"></ul>
-          </article>
-          <article class="note-card">
-            <h3>Kilit Kavramlar</h3>
-            <div id="keywordChips" class="chips"></div>
-          </article>
-          <article class="note-card">
-            <h3>Hızlı Analiz</h3>
-            <ul id="quickStats" class="list"></ul>
-          </article>
-        </div>
-      </section>
+            <label for="dialogueToneSelect">Konuşma tonu</label>
+            <select id="dialogueToneSelect">
+              <option value="doğal">Doğal</option>
+              <option value="enerjik">Enerjik</option>
+              <option value="profesyonel">Profesyonel</option>
+              <option value="dramatik">Dramatik</option>
+              <option value="anlatı">Anlatı</option>
+            </select>
+
+            <label for="dialogueText">Replik</label>
+            <textarea id="dialogueText" rows="3" placeholder="Replik metnini yazın"></textarea>
+
+            <button type="submit" class="primary-btn">Repliği ekle</button>
+          </form>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Replikler</h2>
+          </div>
+          <div id="dialogueList" class="dialogue-list"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="panel-header">
+            <h2>Storyboard</h2>
+          </div>
+          <div class="storyboard-actions">
+            <button id="generateStoryboard" type="button" class="primary-btn">Storyboard oluştur</button>
+            <button id="copyStoryboard" type="button" class="ghost-btn">Panoya kopyala</button>
+          </div>
+          <div id="storyboardOutput" class="storyboard-output" role="status" aria-live="polite"></div>
+        </section>
+      </aside>
     </main>
-
-    <footer class="app-footer">
-      <p>© 2024 Delil Notları · Adli süreçlerde hızlı bilgiye erişim için geliştirildi.</p>
-    </footer>
   </div>
 
-  <div id="loading" class="loading hidden" role="status" aria-live="polite">
-    <div class="spinner"></div>
-    <p>Belge analiz ediliyor...</p>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    if (window['pdfjsLib']) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-  </script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,347 +1,658 @@
-const pdfInput = document.getElementById('pdfInput');
-const dropZone = document.getElementById('dropZone');
-const selectBtn = document.getElementById('selectBtn');
-const statusMessage = document.getElementById('statusMessage');
-const resultsSection = document.getElementById('results');
-const summaryText = document.getElementById('summaryText');
-const highlightList = document.getElementById('highlightList');
-const keywordChips = document.getElementById('keywordChips');
-const quickStats = document.getElementById('quickStats');
-const loadingOverlay = document.getElementById('loading');
-const pageCountLabel = document.getElementById('pageCount');
+const sceneListElement = document.getElementById('sceneList');
+const sceneTimelineElement = document.getElementById('sceneTimeline');
+const backgroundGridElement = document.getElementById('backgroundGrid');
+const characterLibraryElement = document.getElementById('characterLibrary');
+const stageCanvas = document.getElementById('stageCanvas');
+const actorControls = document.getElementById('actorControls');
+const sceneTitleInput = document.getElementById('sceneTitleInput');
+const sceneDurationInput = document.getElementById('sceneDurationInput');
+const sceneDurationLabel = document.getElementById('sceneDurationLabel');
+const dialogueForm = document.getElementById('dialogueForm');
+const dialogueCharacterSelect = document.getElementById('dialogueCharacterSelect');
+const dialogueToneSelect = document.getElementById('dialogueToneSelect');
+const dialogueText = document.getElementById('dialogueText');
+const dialogueListElement = document.getElementById('dialogueList');
+const addSceneButton = document.getElementById('addSceneBtn');
+const sceneCountLabel = document.getElementById('sceneCount');
+const storyboardStatusLabel = document.getElementById('storyboardStatus');
+const storyboardOutput = document.getElementById('storyboardOutput');
+const generateStoryboardButton = document.getElementById('generateStoryboard');
+const copyStoryboardButton = document.getElementById('copyStoryboard');
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
-const STOP_WORDS = new Set([
-  've', 'veya', 'bir', 'iki', 'üç', 'ile', 'ama', 'fakat', 'ancak', 'gibi', 'olan', 'olanlar', 'olanları',
-  'olarak', 'üzerine', 'hakkında', 'şu', 'bu', 'şey', 'çok', 'daha', 'ise', 'için', 'göre', 'de', 'da',
-  'ki', 'değil', 'her', 'en', 'mi', 'mu', 'mü', 'mı', 'ne', 'nasıl', 'neden', 'hangi', 'var', 'yok',
-  'olan', 'birkaç', 'kez', 'olarak', 'ise', 'çünkü', 'ancak', 'hem', 'ya', 'ile', 'et', 'ettı', 'etti',
-  'ettik', 'ettiğini', 'ettikleri', 'ettikten', 'görev', 'bu', 'şu', 'o', 'olarak', 'vardır', 'olan', 'tarafından',
-  'soruşturma', 'dosya', 'dosyası', 'belge', 'belgesi', 'pdf', 'savcı', 'savcılık', 'davaya', 'dava'
-]);
-
-function showStatus(message, type = '') {
-  statusMessage.textContent = message;
-  statusMessage.className = `status${type ? ` ${type}` : ''}`;
-}
-
-function toggleLoading(show) {
-  loadingOverlay.classList.toggle('hidden', !show);
-}
-
-function resetResults() {
-  resultsSection.classList.add('hidden');
-  summaryText.textContent = '';
-  highlightList.innerHTML = '';
-  keywordChips.innerHTML = '';
-  quickStats.innerHTML = '';
-  pageCountLabel.textContent = '';
-}
-
-function isValidFile(file) {
-  if (!file) {
-    showStatus('Dosya seçilmedi.', 'error');
-    return false;
+const backgrounds = [
+  {
+    id: 'sunset-city',
+    name: 'Gün batımı şehri',
+    gradient: 'linear-gradient(140deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%)',
+    description: 'Modern şehir manzarası, gün batımı ışıkları.'
+  },
+  {
+    id: 'tech-lab',
+    name: 'Teknoloji laboratuvarı',
+    gradient: 'linear-gradient(140deg, #1f1c2c 0%, #928dab 100%)',
+    description: 'Holografik ekranlar ve neon ışıklar.'
+  },
+  {
+    id: 'studio-light',
+    name: 'Stüdyo ışıkları',
+    gradient: 'linear-gradient(140deg, #09203f 0%, #537895 100%)',
+    description: 'Talk-show hissi veren stüdyo ortamı.'
+  },
+  {
+    id: 'classroom',
+    name: 'Yaratıcı sınıf',
+    gradient: 'linear-gradient(140deg, #fbd3e9 0%, #bb377d 100%)',
+    description: 'Eğitim videoları için sıcak bir ortam.'
+  },
+  {
+    id: 'minimal-office',
+    name: 'Minimal ofis',
+    gradient: 'linear-gradient(140deg, #4568dc 0%, #b06ab3 100%)',
+    description: 'Kurumsal anlatımlar için sade bir ofis.'
+  },
+  {
+    id: 'green-garden',
+    name: 'Yeşil bahçe',
+    gradient: 'linear-gradient(140deg, #11998e 0%, #38ef7d 100%)',
+    description: 'Doğa temalı hikâyeler için ferah sahne.'
   }
+];
 
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showStatus('Lütfen sadece PDF uzantılı dosyalar yükleyin.', 'error');
-    return false;
-  }
+const characterLibrary = [
+  { id: 'ayse', name: 'Ayşe', role: 'Sunucu', color: '#ff7b6e' },
+  { id: 'kaan', name: 'Kaan', role: 'Girişimci', color: '#6656ff' },
+  { id: 'lale', name: 'Lale', role: 'Öğretmen', color: '#2ab3ff' },
+  { id: 'burak', name: 'Burak', role: 'Öğrenci', color: '#f7b733' },
+  { id: 'nisa', name: 'Nisa', role: 'Yönetici', color: '#845ef7' },
+  { id: 'erol', name: 'Erol', role: 'Anlatıcı', color: '#20c997' }
+];
 
-  if (file.size > MAX_FILE_SIZE) {
-    showStatus('Dosya boyutu 20 MB sınırını aşıyor.', 'error');
-    return false;
-  }
+const expressions = [
+  { id: 'neutral', label: 'Nötr' },
+  { id: 'happy', label: 'Neşeli' },
+  { id: 'serious', label: 'Ciddi' },
+  { id: 'thinking', label: 'Düşünen' },
+  { id: 'surprised', label: 'Şaşkın' }
+];
 
-  return true;
-}
+const actions = [
+  { id: 'talking', label: 'Konuşma' },
+  { id: 'listening', label: 'Dinleme' },
+  { id: 'gesturing', label: 'Jest yapma' },
+  { id: 'walking', label: 'Yürüme' }
+];
 
-async function extractTextFromPDF(arrayBuffer) {
-  if (!window.pdfjsLib) {
-    throw new Error('PDF.js kütüphanesi yüklenemedi.');
-  }
+let scenes = [];
+let activeSceneId = null;
+let sceneCounter = 1;
+let storyboardDirty = true;
 
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    const strings = content.items.map((item) => item.str);
-    fullText += ` ${strings.join(' ')}`;
-  }
-
-  return { text: fullText, pageCount: pdf.numPages };
-}
-
-function normaliseText(text) {
-  return text
-    .replace(/\u0000/g, ' ')
-    .replace(/[\r\f\t]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function splitSentences(text) {
-  if (!text) {
-    return [];
-  }
-  return text.match(/[^.!?]+[.!?]?/g) || [];
-}
-
-function buildSummary(sentences) {
-  if (!sentences.length) {
-    return 'Belgeden anlamlı bir cümle çıkarılamadı.';
-  }
-
-  const sentenceScores = [];
-  const wordFrequencies = new Map();
-
-  sentences.forEach((sentence) => {
-    const words = (sentence.toLowerCase().match(/[\p{L}0-9']+/gu) || [])
-      .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
-
-    words.forEach((word) => {
-      const current = wordFrequencies.get(word) || 0;
-      wordFrequencies.set(word, current + 1);
-    });
-  });
-
-  const maxFrequency = Math.max(...wordFrequencies.values(), 1);
-
-  sentences.forEach((sentence, index) => {
-    const words = (sentence.toLowerCase().match(/[\p{L}0-9']+/gu) || [])
-      .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
-
-    const score = words.reduce((total, word) => total + (wordFrequencies.get(word) || 0) / maxFrequency, 0);
-    sentenceScores.push({ index, sentence: sentence.trim(), score });
-  });
-
-  sentenceScores.sort((a, b) => b.score - a.score);
-  const summaryCount = Math.min(5, Math.max(2, Math.round(sentences.length / 6)));
-  const selected = sentenceScores.slice(0, summaryCount).sort((a, b) => a.index - b.index);
-
-  return selected.map((item) => item.sentence).join(' ');
-}
-
-function extractEntities(text) {
-  const dates = new Set();
-  const amounts = new Set();
-  const caseNumbers = new Set();
-  const names = new Set();
-
-  const datePatterns = [
-    /\b\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4}\b/g,
-    /\b\d{4}-\d{2}-\d{2}\b/g,
-    /\b\d{1,2}\s+(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)\s+\d{4}\b/gi
-  ];
-  datePatterns.forEach((regex) => {
-    const matches = text.match(regex);
-    if (matches) {
-      matches.forEach((match) => dates.add(match));
-    }
-  });
-
-  const amountMatches = text.match(/\b\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?\s*(?:tl|₺|türk lirası|usd|dolar|euro|€)\b/gi);
-  if (amountMatches) {
-    amountMatches.forEach((match) => amounts.add(match));
-  }
-
-  const caseMatches = text.match(/\b\d{4}\/\d{1,4}\b/g);
-  if (caseMatches) {
-    caseMatches.forEach((match) => caseNumbers.add(match));
-  }
-
-  const nameMatches = text.match(/\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)\b/g);
-  if (nameMatches) {
-    nameMatches.forEach((match) => names.add(match));
-  }
-
-  return {
-    dates: Array.from(dates).slice(0, 6),
-    amounts: Array.from(amounts).slice(0, 6),
-    caseNumbers: Array.from(caseNumbers).slice(0, 6),
-    names: Array.from(names).slice(0, 6)
+function createSceneTemplate() {
+  const background = backgrounds[(sceneCounter - 1) % backgrounds.length];
+  const scene = {
+    id: `scene-${sceneCounter}`,
+    title: `Sahne ${sceneCounter}`,
+    duration: 8,
+    background: background.id,
+    characters: [],
+    dialogues: []
   };
+  sceneCounter += 1;
+  return scene;
 }
 
-function buildHighlights(entities) {
-  const highlights = [];
-
-  if (entities.dates.length) {
-    highlights.push(`Tespit edilen tarihler: ${entities.dates.join(', ')}`);
-  }
-
-  if (entities.amounts.length) {
-    highlights.push(`Finansal kayıtlar: ${entities.amounts.join(', ')}`);
-  }
-
-  if (entities.caseNumbers.length) {
-    highlights.push(`Dosya / karar numaraları: ${entities.caseNumbers.join(', ')}`);
-  }
-
-  if (entities.names.length) {
-    highlights.push(`Olası kişi veya kurum isimleri: ${entities.names.join(', ')}`);
-  }
-
-  if (!highlights.length) {
-    highlights.push('Belgede açıkça ayrıştırılabilen kritik kayıt bulunamadı. Manuel gözden geçirme önerilir.');
-  }
-
-  return highlights;
+function getActiveScene() {
+  return scenes.find((scene) => scene.id === activeSceneId) || null;
 }
 
-function extractKeywords(text) {
-  const words = text.toLowerCase().match(/[\p{L}0-9']+/gu) || [];
-  const frequencies = new Map();
+function setActiveScene(sceneId) {
+  activeSceneId = sceneId;
+  const activeScene = getActiveScene();
+  if (!activeScene) {
+    return;
+  }
 
-  words.forEach((word) => {
-    if (word.length <= 3 || STOP_WORDS.has(word)) {
-      return;
-    }
-    const current = frequencies.get(word) || 0;
-    frequencies.set(word, current + 1);
-  });
+  sceneTitleInput.value = activeScene.title;
+  sceneDurationInput.value = String(activeScene.duration);
+  sceneDurationLabel.textContent = `${activeScene.duration} sn`;
 
-  const sorted = Array.from(frequencies.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([word]) => word);
-
-  return sorted;
+  renderSceneList();
+  renderTimeline();
+  renderBackgroundGrid();
+  renderCharacterLibrary();
+  renderStage();
+  renderActorControls();
+  renderDialogueList();
+  renderDialogueCharacterSelect();
 }
 
-function buildQuickStats(text, pageCount, entities) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const sentences = splitSentences(text);
-  const readingMinutes = Math.max(1, Math.round(words.length / 180));
-  const highlightTotal = entities.dates.length + entities.amounts.length + entities.caseNumbers.length + entities.names.length;
-
-  return [
-    `Sayfa sayısı: ${pageCount}`,
-    `Kelime sayısı: ${words.length}`,
-    `Cümle sayısı: ${sentences.length}`,
-    `Tahmini okuma süresi: ${readingMinutes} dakika`,
-    `Otomatik yakalanan kritik kayıtlar: ${highlightTotal}`
-  ];
+function markStoryboardDirty() {
+  storyboardDirty = true;
+  storyboardStatusLabel.textContent = 'Güncel değil';
 }
 
-function renderList(listElement, items) {
-  listElement.innerHTML = '';
-  items.forEach((item) => {
-    const li = document.createElement('li');
-    li.textContent = item;
-    listElement.appendChild(li);
-  });
+function addScene() {
+  const newScene = createSceneTemplate();
+  scenes.push(newScene);
+  updateSceneCount();
+  markStoryboardDirty();
+  setActiveScene(newScene.id);
 }
 
-function renderChips(container, items) {
-  container.innerHTML = '';
-  if (!items.length) {
+function removeScene(sceneId) {
+  if (scenes.length === 1) {
+    return;
+  }
+  scenes = scenes.filter((scene) => scene.id !== sceneId);
+  if (activeSceneId === sceneId) {
+    activeSceneId = scenes[0]?.id || null;
+  }
+  updateSceneCount();
+  markStoryboardDirty();
+  setActiveScene(activeSceneId);
+}
+
+function renderSceneList() {
+  sceneListElement.innerHTML = '';
+
+  if (!scenes.length) {
     const empty = document.createElement('p');
-    empty.className = 'hint';
-    empty.textContent = 'Anahtar kelime çıkarılamadı.';
-    container.appendChild(empty);
+    empty.className = 'panel-hint';
+    empty.textContent = 'Henüz sahne yok. "Yeni sahne" düğmesine tıklayın.';
+    sceneListElement.appendChild(empty);
     return;
   }
 
-  items.forEach((item) => {
-    const span = document.createElement('span');
-    span.className = 'chip';
-    span.textContent = item;
-    container.appendChild(span);
+  scenes.forEach((scene, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `scene-card${scene.id === activeSceneId ? ' active' : ''}`;
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', scene.id === activeSceneId);
+    button.innerHTML = `
+      <div>
+        <strong>${scene.title}</strong>
+        <span>${getBackgroundById(scene.background)?.name || 'Arka plan yok'} · ${scene.duration} sn</span>
+      </div>
+      <span>#${index + 1}</span>
+    `;
+    button.addEventListener('click', () => {
+      setActiveScene(scene.id);
+    });
+    button.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      removeScene(scene.id);
+    });
+
+    sceneListElement.appendChild(button);
   });
 }
 
-function renderResults(analysis) {
-  summaryText.textContent = analysis.summary;
-  pageCountLabel.textContent = `${analysis.pageCount} sayfa`;
-  renderList(highlightList, analysis.highlights);
-  renderChips(keywordChips, analysis.keywords);
-  renderList(quickStats, analysis.quickStats);
-  resultsSection.classList.remove('hidden');
+function renderTimeline() {
+  sceneTimelineElement.innerHTML = '';
+
+  scenes.forEach((scene, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `timeline-item${scene.id === activeSceneId ? ' active' : ''}`;
+    button.innerHTML = `<span>${scene.duration} sn</span> ${scene.title}`;
+    button.title = 'Seçmek için tıklayın, kaldırmak için sağ tıklayın';
+    button.addEventListener('click', () => {
+      setActiveScene(scene.id);
+    });
+    button.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      removeScene(scene.id);
+    });
+
+    sceneTimelineElement.appendChild(button);
+
+    if (index < scenes.length - 1) {
+      const spacer = document.createElement('div');
+      spacer.className = 'timeline-spacer';
+      sceneTimelineElement.appendChild(spacer);
+    }
+  });
 }
 
-async function handleFile(file) {
-  resetResults();
+function renderBackgroundGrid() {
+  backgroundGridElement.innerHTML = '';
+  const activeScene = getActiveScene();
 
-  if (!isValidFile(file)) {
+  backgrounds.forEach((background) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = `background-card${activeScene?.background === background.id ? ' active' : ''}`;
+    card.style.background = background.gradient;
+    card.dataset.name = background.name;
+    card.title = background.description;
+    card.addEventListener('click', () => {
+      if (!activeScene) return;
+      activeScene.background = background.id;
+      renderBackgroundGrid();
+      renderStage();
+      markStoryboardDirty();
+    });
+
+    backgroundGridElement.appendChild(card);
+  });
+}
+
+function renderCharacterLibrary() {
+  characterLibraryElement.innerHTML = '';
+  const activeScene = getActiveScene();
+
+  characterLibrary.forEach((character) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'character-card';
+    card.title = `${character.name} · ${character.role}`;
+    card.innerHTML = `
+      <div class="character-avatar" style="background: ${character.color}">${character.name.charAt(0)}</div>
+      <strong>${character.name}</strong>
+      <p class="character-role">${character.role}</p>
+    `;
+
+    card.addEventListener('click', () => {
+      if (!activeScene) return;
+      const exists = activeScene.characters.some((actor) => actor.id === character.id);
+      if (!exists) {
+        activeScene.characters.push({
+          id: character.id,
+          name: character.name,
+          role: character.role,
+          color: character.color,
+          expression: 'neutral',
+          action: 'talking'
+        });
+        renderStage();
+        renderActorControls();
+        renderDialogueCharacterSelect();
+        markStoryboardDirty();
+      }
+    });
+
+    const isActive = activeScene?.characters.some((actor) => actor.id === character.id);
+    card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    if (isActive) {
+      card.classList.add('active');
+    }
+
+    characterLibraryElement.appendChild(card);
+  });
+}
+
+function renderStage() {
+  const activeScene = getActiveScene();
+  stageCanvas.innerHTML = '';
+
+  if (!activeScene) {
+    stageCanvas.innerHTML = '<p class="empty-stage">Önce bir sahne ekleyin.</p>';
     return;
   }
 
-  showStatus('Dosya alındı, analiz başlatılıyor...', '');
-  toggleLoading(true);
+  const background = getBackgroundById(activeScene.background);
+  if (background) {
+    stageCanvas.style.background = background.gradient;
+    stageCanvas.setAttribute('aria-label', `${activeScene.title} sahnesi, ${background.name} arka planı`);
+  } else {
+    stageCanvas.removeAttribute('style');
+  }
+
+  if (!activeScene.characters.length) {
+    stageCanvas.innerHTML = '<p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>';
+    return;
+  }
+
+  activeScene.characters.forEach((actor) => {
+    const characterEl = document.createElement('div');
+    characterEl.className = 'stage-character';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.style.background = `linear-gradient(135deg, ${actor.color}, rgba(255, 255, 255, 0.18))`;
+    avatar.textContent = actor.name.charAt(0);
+
+    const nameBadge = document.createElement('div');
+    nameBadge.className = 'badge';
+    nameBadge.textContent = `${actor.name} · ${getExpressionLabel(actor.expression)}`;
+
+    const actionBadge = document.createElement('span');
+    actionBadge.className = 'badge';
+    actionBadge.textContent = getActionLabel(actor.action);
+
+    characterEl.appendChild(avatar);
+    characterEl.appendChild(nameBadge);
+    characterEl.appendChild(actionBadge);
+    stageCanvas.appendChild(characterEl);
+  });
+}
+
+function renderActorControls() {
+  const activeScene = getActiveScene();
+  actorControls.innerHTML = '';
+
+  if (!activeScene) {
+    const info = document.createElement('p');
+    info.className = 'panel-hint';
+    info.textContent = 'Önce bir sahne seçin.';
+    actorControls.appendChild(info);
+    return;
+  }
+
+  if (!activeScene.characters.length) {
+    const hint = document.createElement('p');
+    hint.className = 'panel-hint';
+    hint.textContent = 'Bu sahnede henüz karakter yok. Soldaki kütüphaneden ekleyin.';
+    actorControls.appendChild(hint);
+    return;
+  }
+
+  activeScene.characters.forEach((actor) => {
+    const card = document.createElement('div');
+    card.className = 'actor-card';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'character-avatar';
+    avatar.style.background = actor.color;
+    avatar.textContent = actor.name.charAt(0);
+
+    const info = document.createElement('div');
+    const name = document.createElement('strong');
+    name.textContent = actor.name;
+    const meta = document.createElement('p');
+    meta.className = 'actor-meta';
+    meta.textContent = actor.role;
+
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'actor-actions';
+
+    const expressionSelect = document.createElement('select');
+    expressions.forEach((expression) => {
+      const option = document.createElement('option');
+      option.value = expression.id;
+      option.textContent = expression.label;
+      expressionSelect.appendChild(option);
+    });
+    expressionSelect.value = actor.expression;
+    expressionSelect.addEventListener('change', (event) => {
+      actor.expression = event.target.value;
+      renderStage();
+      renderDialogueList();
+      markStoryboardDirty();
+    });
+
+    const actionSelect = document.createElement('select');
+    actions.forEach((action) => {
+      const option = document.createElement('option');
+      option.value = action.id;
+      option.textContent = action.label;
+      actionSelect.appendChild(option);
+    });
+    actionSelect.value = actor.action;
+    actionSelect.addEventListener('change', (event) => {
+      actor.action = event.target.value;
+      renderStage();
+      markStoryboardDirty();
+    });
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'remove-btn';
+    removeButton.textContent = 'Karakteri kaldır';
+    removeButton.addEventListener('click', () => {
+      removeActorFromScene(actor.id);
+    });
+
+    actionsWrapper.appendChild(expressionSelect);
+    actionsWrapper.appendChild(actionSelect);
+    actionsWrapper.appendChild(removeButton);
+
+    info.appendChild(name);
+    info.appendChild(meta);
+    info.appendChild(actionsWrapper);
+
+    card.appendChild(avatar);
+    card.appendChild(info);
+    actorControls.appendChild(card);
+  });
+}
+
+function removeActorFromScene(actorId) {
+  const activeScene = getActiveScene();
+  if (!activeScene) return;
+
+  activeScene.characters = activeScene.characters.filter((actor) => actor.id !== actorId);
+  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.characterId !== actorId);
+
+  renderStage();
+  renderActorControls();
+  renderCharacterLibrary();
+  renderDialogueList();
+  renderDialogueCharacterSelect();
+  markStoryboardDirty();
+}
+
+function renderDialogueCharacterSelect() {
+  const activeScene = getActiveScene();
+  dialogueCharacterSelect.innerHTML = '';
+
+  const narratorOption = document.createElement('option');
+  narratorOption.value = 'narrator';
+  narratorOption.textContent = 'Anlatıcı';
+  dialogueCharacterSelect.appendChild(narratorOption);
+
+  if (!activeScene) {
+    return;
+  }
+
+  activeScene.characters.forEach((actor) => {
+    const option = document.createElement('option');
+    option.value = actor.id;
+    option.textContent = actor.name;
+    dialogueCharacterSelect.appendChild(option);
+  });
+}
+
+function renderDialogueList() {
+  const activeScene = getActiveScene();
+  dialogueListElement.innerHTML = '';
+
+  if (!activeScene || !activeScene.dialogues.length) {
+    const empty = document.createElement('p');
+    empty.className = 'panel-hint';
+    empty.textContent = 'Bu sahne için henüz replik yazılmadı.';
+    dialogueListElement.appendChild(empty);
+    return;
+  }
+
+  activeScene.dialogues.forEach((dialogue, index) => {
+    const card = document.createElement('div');
+    card.className = 'dialogue-card';
+
+    const header = document.createElement('div');
+    header.className = 'dialogue-header';
+    const speaker = document.createElement('strong');
+    speaker.textContent = `${index + 1}. ${dialogue.characterName}`;
+    const tone = document.createElement('span');
+    tone.className = 'dialogue-tone';
+    tone.textContent = dialogue.tone;
+
+    header.appendChild(speaker);
+    const actor = dialogue.characterId === 'narrator'
+      ? null
+      : activeScene.characters.find((item) => item.id === dialogue.characterId);
+    if (actor) {
+      const expression = document.createElement('span');
+      expression.className = 'dialogue-meta';
+      expression.textContent = getExpressionLabel(actor.expression);
+      header.appendChild(expression);
+    }
+    header.appendChild(tone);
+
+    const text = document.createElement('p');
+    text.className = 'dialogue-text';
+    text.textContent = dialogue.text;
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'remove-btn';
+    removeButton.textContent = 'Repliği sil';
+    removeButton.addEventListener('click', () => {
+      deleteDialogue(dialogue.id);
+    });
+
+    card.appendChild(header);
+    card.appendChild(text);
+    card.appendChild(removeButton);
+
+    dialogueListElement.appendChild(card);
+  });
+}
+
+function deleteDialogue(dialogueId) {
+  const activeScene = getActiveScene();
+  if (!activeScene) return;
+
+  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.id !== dialogueId);
+  renderDialogueList();
+  markStoryboardDirty();
+}
+
+function handleDialogueSubmit(event) {
+  event.preventDefault();
+  const activeScene = getActiveScene();
+  if (!activeScene) return;
+
+  const text = dialogueText.value.trim();
+  if (!text) {
+    dialogueText.focus();
+    return;
+  }
+
+  const characterId = dialogueCharacterSelect.value;
+  const tone = dialogueToneSelect.value;
+  const dialogueId = `dlg-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+
+  let characterName = 'Anlatıcı';
+  if (characterId !== 'narrator') {
+    const actor = activeScene.characters.find((item) => item.id === characterId);
+    characterName = actor ? actor.name : 'Karakter';
+  }
+
+  activeScene.dialogues.push({
+    id: dialogueId,
+    characterId,
+    characterName,
+    tone,
+    text
+  });
+
+  dialogueText.value = '';
+  renderDialogueList();
+  markStoryboardDirty();
+}
+
+function getBackgroundById(id) {
+  return backgrounds.find((background) => background.id === id) || null;
+}
+
+function getExpressionLabel(expressionId) {
+  return expressions.find((expression) => expression.id === expressionId)?.label || 'Nötr';
+}
+
+function getActionLabel(actionId) {
+  return actions.find((action) => action.id === actionId)?.label || 'Konuşma';
+}
+
+function updateSceneCount() {
+  sceneCountLabel.textContent = scenes.length.toString();
+}
+
+function generateStoryboard() {
+  if (!scenes.length) {
+    storyboardOutput.textContent = 'Storyboard oluşturmak için en az bir sahne ekleyin.';
+    storyboardStatusLabel.textContent = 'Hazır değil';
+    storyboardDirty = true;
+    return;
+  }
+
+  const blocks = scenes.map((scene, index) => {
+    const background = getBackgroundById(scene.background);
+    const characterSummary = scene.characters.length
+      ? scene.characters.map((actor) => `${actor.name} (${getExpressionLabel(actor.expression)}, ${getActionLabel(actor.action)})`).join(', ')
+      : 'Karakter eklenmedi';
+
+    const dialogueSummary = scene.dialogues.length
+      ? scene.dialogues.map((dialogue) => `  - ${dialogue.characterName} [${dialogue.tone}]: ${dialogue.text}`).join('\n')
+      : '  - Replik eklenmedi';
+
+    return `Sahne ${index + 1}: ${scene.title}\nSüre: ${scene.duration} sn | Arka plan: ${background?.name || 'Belirlenmedi'}\nKarakterler: ${characterSummary}\nDiyaloglar:\n${dialogueSummary}`;
+  });
+
+  storyboardOutput.textContent = blocks.join('\n\n');
+  storyboardStatusLabel.textContent = 'Güncel';
+  storyboardDirty = false;
+}
+
+async function copyStoryboardToClipboard() {
+  const content = storyboardOutput.textContent.trim();
+  if (!content) {
+    storyboardStatusLabel.textContent = 'Kopyalanacak içerik yok';
+    return;
+  }
+
+  if (!navigator.clipboard) {
+    storyboardStatusLabel.textContent = 'Tarayıcı panoya yazmayı desteklemiyor';
+    return;
+  }
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const { text, pageCount } = await extractTextFromPDF(arrayBuffer);
-    const cleanedText = normaliseText(text);
-
-    if (!cleanedText) {
-      showStatus('Belgeden metin çıkarılamadı. Tarama kalitesini kontrol edin.', 'error');
-      return;
+    await navigator.clipboard.writeText(content);
+    storyboardStatusLabel.textContent = 'Panoya kopyalandı';
+    if (!storyboardDirty) {
+      setTimeout(() => {
+        storyboardStatusLabel.textContent = 'Güncel';
+      }, 1800);
     }
-
-    const sentences = splitSentences(cleanedText);
-    const summary = buildSummary(sentences);
-    const entities = extractEntities(cleanedText);
-    const highlights = buildHighlights(entities);
-    const keywords = extractKeywords(cleanedText);
-    const stats = buildQuickStats(cleanedText, pageCount, entities);
-
-    renderResults({
-      summary,
-      pageCount,
-      highlights,
-      keywords,
-      quickStats: stats
-    });
-
-    showStatus(`"${file.name}" başarıyla analiz edildi.`, 'success');
   } catch (error) {
-    console.error(error);
-    showStatus('Dosya analiz edilirken bir hata oluştu.', 'error');
-  } finally {
-    toggleLoading(false);
+    storyboardStatusLabel.textContent = 'Kopyalama başarısız';
   }
 }
 
-selectBtn.addEventListener('click', () => {
-  pdfInput.click();
-});
+function handleTitleChange(event) {
+  const activeScene = getActiveScene();
+  if (!activeScene) return;
+  activeScene.title = event.target.value || 'Adsız sahne';
+  renderSceneList();
+  renderTimeline();
+  markStoryboardDirty();
+}
 
-dropZone.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    pdfInput.click();
-  }
-});
+function handleDurationChange(event) {
+  const activeScene = getActiveScene();
+  if (!activeScene) return;
+  const value = Number.parseInt(event.target.value, 10);
+  activeScene.duration = value;
+  sceneDurationLabel.textContent = `${value} sn`;
+  renderSceneList();
+  renderTimeline();
+  markStoryboardDirty();
+}
 
-pdfInput.addEventListener('change', (event) => {
-  const [file] = event.target.files;
-  if (file) {
-    handleFile(file);
-  }
-});
+function initialise() {
+  addSceneButton.addEventListener('click', addScene);
+  sceneTitleInput.addEventListener('input', handleTitleChange);
+  sceneDurationInput.addEventListener('input', handleDurationChange);
+  dialogueForm.addEventListener('submit', handleDialogueSubmit);
+  generateStoryboardButton.addEventListener('click', generateStoryboard);
+  copyStoryboardButton.addEventListener('click', copyStoryboardToClipboard);
 
-dropZone.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  dropZone.classList.add('dragover');
-});
+  addScene();
+  renderBackgroundGrid();
+  renderCharacterLibrary();
+  renderDialogueCharacterSelect();
+  updateSceneCount();
+}
 
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('dragover');
-});
-
-dropZone.addEventListener('drop', (event) => {
-  event.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = event.dataTransfer.files[0];
-  if (file) {
-    handleFile(file);
-  }
-});
-
-resultsSection.classList.add('hidden');
-showStatus('Hazır. PDF yüklediğinizde otomatik analiz başlayacak.');
+initialise();
