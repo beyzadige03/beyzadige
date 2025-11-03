@@ -1,658 +1,484 @@
-const sceneListElement = document.getElementById('sceneList');
-const sceneTimelineElement = document.getElementById('sceneTimeline');
-const backgroundGridElement = document.getElementById('backgroundGrid');
-const characterLibraryElement = document.getElementById('characterLibrary');
-const stageCanvas = document.getElementById('stageCanvas');
-const actorControls = document.getElementById('actorControls');
-const sceneTitleInput = document.getElementById('sceneTitleInput');
-const sceneDurationInput = document.getElementById('sceneDurationInput');
-const sceneDurationLabel = document.getElementById('sceneDurationLabel');
-const dialogueForm = document.getElementById('dialogueForm');
-const dialogueCharacterSelect = document.getElementById('dialogueCharacterSelect');
-const dialogueToneSelect = document.getElementById('dialogueToneSelect');
-const dialogueText = document.getElementById('dialogueText');
-const dialogueListElement = document.getElementById('dialogueList');
-const addSceneButton = document.getElementById('addSceneBtn');
-const sceneCountLabel = document.getElementById('sceneCount');
-const storyboardStatusLabel = document.getElementById('storyboardStatus');
-const storyboardOutput = document.getElementById('storyboardOutput');
-const generateStoryboardButton = document.getElementById('generateStoryboard');
-const copyStoryboardButton = document.getElementById('copyStoryboard');
+const analysisForm = document.getElementById('analysisForm');
+const promptInput = document.getElementById('promptInput');
+const showBreakdownToggle = document.getElementById('showBreakdown');
+const overallScoreElement = document.getElementById('overallScore');
+const analysisIntro = document.getElementById('analysisIntro');
+const analysisResults = document.getElementById('analysisResults');
+const narrativeSummary = document.getElementById('narrativeSummary');
+const criteriaContainer = document.getElementById('criteriaContainer');
+const guidanceList = document.getElementById('guidanceList');
+const revisedPromptElement = document.getElementById('revisedPrompt');
+const copyPromptBtn = document.getElementById('copyPromptBtn');
+const copyFeedback = document.getElementById('copyFeedback');
+const resetBtn = document.getElementById('resetBtn');
 
-const backgrounds = [
-  {
-    id: 'sunset-city',
-    name: 'Gün batımı şehri',
-    gradient: 'linear-gradient(140deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%)',
-    description: 'Modern şehir manzarası, gün batımı ışıkları.'
-  },
-  {
-    id: 'tech-lab',
-    name: 'Teknoloji laboratuvarı',
-    gradient: 'linear-gradient(140deg, #1f1c2c 0%, #928dab 100%)',
-    description: 'Holografik ekranlar ve neon ışıklar.'
-  },
-  {
-    id: 'studio-light',
-    name: 'Stüdyo ışıkları',
-    gradient: 'linear-gradient(140deg, #09203f 0%, #537895 100%)',
-    description: 'Talk-show hissi veren stüdyo ortamı.'
-  },
-  {
-    id: 'classroom',
-    name: 'Yaratıcı sınıf',
-    gradient: 'linear-gradient(140deg, #fbd3e9 0%, #bb377d 100%)',
-    description: 'Eğitim videoları için sıcak bir ortam.'
-  },
-  {
-    id: 'minimal-office',
-    name: 'Minimal ofis',
-    gradient: 'linear-gradient(140deg, #4568dc 0%, #b06ab3 100%)',
-    description: 'Kurumsal anlatımlar için sade bir ofis.'
-  },
-  {
-    id: 'green-garden',
-    name: 'Yeşil bahçe',
-    gradient: 'linear-gradient(140deg, #11998e 0%, #38ef7d 100%)',
-    description: 'Doğa temalı hikâyeler için ferah sahne.'
-  }
+const CRITERIA = [
+  { id: 'clarity', label: 'Netlik ve Anlaşılırlık' },
+  { id: 'purpose', label: 'Amaç Uyumu' },
+  { id: 'context', label: 'Bağlam Sağlama' },
+  { id: 'role', label: 'Rol Tanımı' },
+  { id: 'tone', label: 'Üslup ve Ton' },
+  { id: 'structure', label: 'Yapı ve Format' },
+  { id: 'creativity', label: 'Yaratıcılık ve Özgünlük' },
+  { id: 'logic', label: 'Mantıksal Akış' },
+  { id: 'constraints', label: 'Kısıtlar ve Ölçülebilirlik' },
+  { id: 'flexibility', label: 'Geliştirilebilirlik ve Esneklik' }
 ];
 
-const characterLibrary = [
-  { id: 'ayse', name: 'Ayşe', role: 'Sunucu', color: '#ff7b6e' },
-  { id: 'kaan', name: 'Kaan', role: 'Girişimci', color: '#6656ff' },
-  { id: 'lale', name: 'Lale', role: 'Öğretmen', color: '#2ab3ff' },
-  { id: 'burak', name: 'Burak', role: 'Öğrenci', color: '#f7b733' },
-  { id: 'nisa', name: 'Nisa', role: 'Yönetici', color: '#845ef7' },
-  { id: 'erol', name: 'Erol', role: 'Anlatıcı', color: '#20c997' }
+const improvementTips = {
+  clarity: [
+    'Belirsiz kelimeler yerine doğrudan fiiller ve net eylemler kullanın.',
+    'İstenen çıktıyı bir cümlede özetleyip ardından detayları maddeleyin.',
+    'Prompt’un başında görevi bir komut fiiliyle ifade edin (ör. “Analiz et”, “Tasarla”).'
+  ],
+  purpose: [
+    'Yapay zekânın ne üretmesini istediğinizi sonuç formatıyla birlikte yazın.',
+    'Prompt’un hedefini “Amaç:” gibi kısa bir açıklamayla belirgin hale getirin.',
+    'Çıktının nasıl kullanılacağını eklemek amaç uyumunu güçlendirir.'
+  ],
+  context: [
+    'Hedef kitleyi veya kullanım senaryosunu birkaç kelimeyle belirtin.',
+    'Önemli arka plan bilgilerini kısa cümlelerle ekleyin.',
+    'Prompt’unuza örnek ya da referans bir senaryo eklemeyi düşünün.'
+  ],
+  role: [
+    '“Deneyimli bir eğitmen olarak” gibi rol talimatlarını kullanın.',
+    'Uzmanın alanını ve deneyim seviyesini tarif ederek ses tonunu yönetin.',
+    'Birden fazla perspektif gerekiyorsa her bir rolü ayrı belirtin.'
+  ],
+  tone: [
+    'Yanıtın tonunu açıkça belirtin (resmi, samimi, mizahi vb.).',
+    'Ton beklentisini güçlendirmek için “Nasıl hissettirmeli?” sorusunu yanıtlayın.',
+    'Giriş ve kapanış tarzını (“ilham verici bir girişle başla”) ifade edin.'
+  ],
+  structure: [
+    'Çıktının formatını (liste, tablo, madde vb.) açıkça söyleyin.',
+    'Uzun metinleri başlıklar veya numaralı adımlarla düzenlemeyi isteyin.',
+    'Önce analiz sonra öneri gibi sıralı görevleri netleştirin.'
+  ],
+  creativity: [
+    'Prompt’unuza “X karakteri gibi anlat” veya “farklı bir metafor kullan” gibi yaratıcı kısıtlar ekleyin.',
+    'Sıradışı bakış açıları ya da hikâyeleştirme isteyerek özgünlük katın.',
+    'Analizden sonra ilginç bir uygulama örneği üretmesini talep edin.'
+  ],
+  logic: [
+    '“Adım adım düşün” gibi yönlendirmelerle mantıksal akışı netleştirin.',
+    'Önce analiz, sonra öneri şeklinde görev sırasını yazın.',
+    'Gerekiyorsa numaralı adımlarla beklenen süreci tarif edin.'
+  ],
+  constraints: [
+    'Kelime, süre veya çıktı sayısı gibi ölçülebilir sınırlar ekleyin.',
+    '“En fazla 5 madde” gibi net limitler belirleyin.',
+    'Dil veya araç kısıtlarını (yalnızca Türkçe, yalnızca markdown vb.) eklemeyi unutmayın.'
+  ],
+  flexibility: [
+    'Geri bildirim sonrası revize edilebilir olduğuna dair bir cümle ekleyin.',
+    '“Eğer bilgiler yetersizse sorular sor” gibi esneklik notları ekleyin.',
+    'Alternatif öneri sunmasını talep ederek cevap çeşitliliğini artırın.'
+  ]
+};
+
+const randomPhrases = {
+  intro: [
+    '🔍 Analiz tamamlandı. Sonuçlara hızlıca bakalım.',
+    '🧠 Değerlendirme raporu hazır! Öne çıkan noktalar şöyle:',
+    '📊 Promptunuzun detaylı incelemesi aşağıda.'
+  ],
+  strengthLead: [
+    'Parladığınız kriterler:',
+    'Güçlü taraflarınız özellikle şuralarda öne çıkıyor:',
+    'Artı hanesine yazdığımız başlıklar:'
+  ],
+  improveLead: [
+    'İyileştirme fırsatları ise şuralarda yoğunlaşıyor:',
+    'Daha etkili olması için aşağıdaki alanlara odaklanın:',
+    'Gelişim önerilerimiz:'
+  ],
+  outro: [
+    '🎯 Her revizyonda bu kriterleri hatırlatıp daha tutarlı promptlar yazabilirsiniz.',
+    '🚀 Bir sonraki denemede bu önerileri uygulayarak puanı kolayca yükseltebilirsiniz.',
+    '✨ Aynı promptu ufak dokunuşlarla tekrar gönderip ilerlemeyi takip edebilirsiniz.'
+  ]
+};
+
+const roleOptions = [
+  'deneyimli bir içerik stratejisti',
+  'kıdemli bir ürün yöneticisi',
+  'başarılı bir edebiyat öğretmeni',
+  'hikâye anlatıcılığı uzmanı',
+  'tecrübeli bir kullanıcı deneyimi araştırmacısı',
+  'büyüme odaklı bir pazarlama danışmanı'
 ];
 
-const expressions = [
-  { id: 'neutral', label: 'Nötr' },
-  { id: 'happy', label: 'Neşeli' },
-  { id: 'serious', label: 'Ciddi' },
-  { id: 'thinking', label: 'Düşünen' },
-  { id: 'surprised', label: 'Şaşkın' }
+const formatOptions = [
+  'numaralı adımlar halinde',
+  'başlıklar ve alt başlıklar kullanarak',
+  'tablo ve kısa açıklamalarla',
+  'madde işaretli listeler şeklinde',
+  'kısa paragraflarla'
 ];
 
-const actions = [
-  { id: 'talking', label: 'Konuşma' },
-  { id: 'listening', label: 'Dinleme' },
-  { id: 'gesturing', label: 'Jest yapma' },
-  { id: 'walking', label: 'Yürüme' }
+const toneOptions = [
+  'samimi ve ilham verici bir tonla',
+  'resmi ve akademik bir dilde',
+  'mizahi ama öğretici bir tavırla',
+  'analitik ve sonuç odaklı bir üslupta'
 ];
 
-let scenes = [];
-let activeSceneId = null;
-let sceneCounter = 1;
-let storyboardDirty = true;
+const flexibilityOptions = [
+  'Eksik bilgiler varsa bana soru sor.',
+  'Önerilerini iki farklı yaklaşım olarak sun.',
+  'Geri bildirimime göre revize etmeye hazır ol.',
+  'Uygun görürsen ek kaynak önerileri ekle.'
+];
 
-function createSceneTemplate() {
-  const background = backgrounds[(sceneCounter - 1) % backgrounds.length];
-  const scene = {
-    id: `scene-${sceneCounter}`,
-    title: `Sahne ${sceneCounter}`,
-    duration: 8,
-    background: background.id,
-    characters: [],
-    dialogues: []
+function clamp(value, min = 0, max = 10) {
+  return Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+}
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function computeFeatures(rawText) {
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
+  const words = text ? text.split(/\s+/).filter(Boolean) : [];
+  const sentences = text ? text.split(/[.!?¿¡…\n]+/).filter((part) => part.trim().length > 0) : [];
+  const hasPattern = (pattern) => pattern.test(lower);
+
+  const hasNumbers = /\d/.test(text);
+  const ambiguous = /(bir\s+şey|herhangi|vs\.?|vesaire|şeyler|neyse)/i.test(text);
+  const hasPurpose = hasPattern(/(yaz|hazırla|oluştur|analiz et|değerlendir|planla|açıkla|tartış)/);
+  const hasRole = hasPattern(/(olarak|rolünde|rolüyle|as\s+a|gibi davran)/);
+  const hasTone = hasPattern(/(ton|tonta|samimi|resmi|akademik|mizahi|friendly|formal|casual|resmî|sıcak)/);
+  const hasFormat = hasPattern(/(liste|madde|tablo|tabular|markdown|başlık|paragraf|format|bullet|outline)/);
+  const hasContext = hasPattern(/(için|amacıyla|hedef|kitle|durum|senaryo|bağlam|context|platform|projeye)/);
+  const hasAudience = hasPattern(/(hedef kitle|kullanıcı|müşteri|ogrenci|öğrenci|yönetici|ekip|yatırımcı|ebeveyn|yetişkin|genç|çocuk)/);
+  const hasCreativeCue = hasPattern(/(hikaye|hikâye|metafor|rol yap|hayal et|imagine|tarihi|kurgusal|farklı bakış|yaratıcı|benzersiz|karakter)/);
+  const hasStepCue = hasPattern(/(adım adım|step by step|önce|sonra|aşama|plan|süreci|madde madde)/);
+  const hasConstraint = hasNumbers && hasPattern(/(kelime|cümle|dakika|min|gün|sayfa|paragraf|madde|metin|limit|en az|en fazla|en çok|max|min)/);
+  const hasFlexibility = hasPattern(/(gerekirse|dilersen|alternatif|revize|geri bildirim|feedback|esnek|isteğe|opsiyonel)/);
+  const hasExampleCue = hasPattern(/(örnek|template|model|kılavuz)/);
+  const hasQuestion = /\?$/.test(text) || text.includes('?');
+  const numberedList = hasPattern(/(1\.|2\.|3\.|\ba\)|\bb\)|\b-\s)/);
+
+  return {
+    text,
+    lower,
+    wordCount: words.length,
+    sentenceCount: sentences.length,
+    characterCount: text.length,
+    ambiguous,
+    hasPurpose,
+    hasRole,
+    hasTone,
+    hasFormat,
+    hasContext,
+    hasAudience,
+    hasCreativeCue,
+    hasStepCue,
+    hasConstraint,
+    hasFlexibility,
+    hasExampleCue,
+    hasNumbers,
+    hasQuestion,
+    numberedList
   };
-  sceneCounter += 1;
-  return scene;
 }
 
-function getActiveScene() {
-  return scenes.find((scene) => scene.id === activeSceneId) || null;
-}
+const evaluators = {
+  clarity: (f) => {
+    let score = 2;
+    if (f.wordCount > 40) score += 4;
+    else if (f.wordCount > 25) score += 3;
+    else if (f.wordCount > 12) score += 2;
+    if (f.sentenceCount >= 2) score += 1.5;
+    if (f.hasPurpose) score += 1.5;
+    if (f.ambiguous) score -= 2.5;
+    if (!f.text) score = 0;
+    score = clamp(score);
+    const detail = f.ambiguous
+      ? 'Bazı ifadeler belirsiz kaldı; daha net komutlar işe yarar.'
+      : f.hasPurpose
+        ? 'Görev tanımınız net, ifadeler anlaşılır.'
+        : 'Temel komut mevcut ancak daha net hedeflerle güçlendirilebilir.';
+    return { score, detail };
+  },
+  purpose: (f) => {
+    let score = 2;
+    if (f.hasPurpose) score += 4.5;
+    if (f.hasContext) score += 1.5;
+    if (f.hasExampleCue || f.hasQuestion) score += 1;
+    if (f.wordCount > 60) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasPurpose
+      ? 'İstenen çıktı türü anlaşılır biçimde ifade edilmiş.'
+      : 'Amaç daha belirgin hale getirildiğinde model daha doğru yanıt verir.';
+    return { score, detail };
+  },
+  context: (f) => {
+    let score = 1.5;
+    if (f.hasContext) score += 3;
+    if (f.hasAudience) score += 2.5;
+    if (f.hasExampleCue) score += 1.5;
+    if (f.wordCount > 70) score += 1;
+    score = clamp(score);
+    const detail = f.hasContext
+      ? 'Bağlam bilgisi eklenmiş; hedef anlaşılır.'
+      : 'Kullanım senaryosu veya hedef kitleyi eklemek bağlamı güçlendirir.';
+    return { score, detail };
+  },
+  role: (f) => {
+    let score = 1;
+    if (f.hasRole) score += 6;
+    if (f.hasRole && f.hasTone) score += 1.5;
+    if (f.wordCount > 35) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasRole
+      ? 'Modelin hangi perspektiften yanıt vereceği belirtilmiş.'
+      : 'Bir rol veya uzmanlık seviyesi tanımlamak yanıtı daha tutarlı kılar.';
+    return { score, detail };
+  },
+  tone: (f) => {
+    let score = 1;
+    if (f.hasTone) score += 5.5;
+    if (f.hasTone && f.hasRole) score += 1;
+    if (f.hasTone && f.hasContext) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasTone
+      ? 'Beklenen ton ve üslup belirtilmiş.'
+      : 'Yanıtın duygusunu veya resmiyet seviyesini eklemek iyi olur.';
+    return { score, detail };
+  },
+  structure: (f) => {
+    let score = 1.5;
+    if (f.hasFormat) score += 4;
+    if (f.hasStepCue) score += 2;
+    if (f.numberedList) score += 1;
+    if (f.wordCount > 50) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasFormat
+      ? 'Çıktının nasıl yapılandırılacağı tarif edilmiş.'
+      : 'Cevap biçimini (liste, tablo vb.) belirtmek sonuçları keskinleştirir.';
+    return { score, detail };
+  },
+  creativity: (f) => {
+    let score = 2;
+    if (f.hasCreativeCue) score += 4.5;
+    if (f.hasRole) score += 1;
+    if (f.hasTone) score += 0.5;
+    if (f.hasStepCue) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasCreativeCue
+      ? 'Prompt yaratıcı yönlendirmeler içeriyor.'
+      : 'Yaratıcı bir bakış açısı veya metafor talebi eklemek özgünlüğü artırır.';
+    return { score, detail };
+  },
+  logic: (f) => {
+    let score = 1.5;
+    if (f.hasStepCue) score += 4.5;
+    if (f.hasFormat) score += 1.5;
+    if (f.sentenceCount >= 3) score += 1;
+    if (f.numberedList) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasStepCue
+      ? 'Mantıksal akış adım adım yönlendirilmiş.'
+      : 'Görev sırasını açıklamak yanıtın planlı ilerlemesini sağlar.';
+    return { score, detail };
+  },
+  constraints: (f) => {
+    let score = 1;
+    if (f.hasConstraint) score += 5.5;
+    if (f.hasNumbers) score += 1;
+    if (f.hasFormat) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasConstraint
+      ? 'Net ölçülebilir kısıtlar eklenmiş.'
+      : 'Kelime, süre veya format limitleri eklemek ölçülebilirlik sağlar.';
+    return { score, detail };
+  },
+  flexibility: (f) => {
+    let score = 2;
+    if (f.hasFlexibility) score += 4.5;
+    if (f.hasQuestion) score += 1;
+    if (f.hasStepCue) score += 0.5;
+    score = clamp(score);
+    const detail = f.hasFlexibility
+      ? 'Geri bildirim ve revizyon notlarıyla esneklik sağlanmış.'
+      : 'Gerektiğinde soru sormasını veya alternatif önermesini isteyin.';
+    return { score, detail };
+  }
+};
 
-function setActiveScene(sceneId) {
-  activeSceneId = sceneId;
-  const activeScene = getActiveScene();
-  if (!activeScene) {
-    return;
+function buildCriterionCard({ id, label, score, detail }) {
+  const card = document.createElement('article');
+  card.className = 'criteria-card';
+  if (score <= 0) {
+    card.setAttribute('data-empty', 'true');
   }
 
-  sceneTitleInput.value = activeScene.title;
-  sceneDurationInput.value = String(activeScene.duration);
-  sceneDurationLabel.textContent = `${activeScene.duration} sn`;
+  const header = document.createElement('header');
+  const title = document.createElement('h3');
+  title.textContent = label;
+  const value = document.createElement('span');
+  value.className = 'score';
+  if (score >= 8) value.classList.add('high');
+  else if (score >= 5) value.classList.add('mid');
+  else value.classList.add('low');
+  value.textContent = score.toFixed(1);
+  header.append(title, value);
 
-  renderSceneList();
-  renderTimeline();
-  renderBackgroundGrid();
-  renderCharacterLibrary();
-  renderStage();
-  renderActorControls();
-  renderDialogueList();
-  renderDialogueCharacterSelect();
+  const paragraph = document.createElement('p');
+  paragraph.textContent = detail;
+
+  card.append(header, paragraph);
+  return card;
 }
 
-function markStoryboardDirty() {
-  storyboardDirty = true;
-  storyboardStatusLabel.textContent = 'Güncel değil';
-}
+function createNarrative(summary, strengths, improvements) {
+  const fragments = [];
+  fragments.push(`<p>${summary}</p>`);
 
-function addScene() {
-  const newScene = createSceneTemplate();
-  scenes.push(newScene);
-  updateSceneCount();
-  markStoryboardDirty();
-  setActiveScene(newScene.id);
-}
-
-function removeScene(sceneId) {
-  if (scenes.length === 1) {
-    return;
-  }
-  scenes = scenes.filter((scene) => scene.id !== sceneId);
-  if (activeSceneId === sceneId) {
-    activeSceneId = scenes[0]?.id || null;
-  }
-  updateSceneCount();
-  markStoryboardDirty();
-  setActiveScene(activeSceneId);
-}
-
-function renderSceneList() {
-  sceneListElement.innerHTML = '';
-
-  if (!scenes.length) {
-    const empty = document.createElement('p');
-    empty.className = 'panel-hint';
-    empty.textContent = 'Henüz sahne yok. "Yeni sahne" düğmesine tıklayın.';
-    sceneListElement.appendChild(empty);
-    return;
+  if (strengths.length) {
+    const lead = pickRandom(randomPhrases.strengthLead);
+    fragments.push(`<p><strong>${lead}</strong> ${strengths.join(', ')}.</p>`);
   }
 
-  scenes.forEach((scene, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `scene-card${scene.id === activeSceneId ? ' active' : ''}`;
-    button.setAttribute('role', 'tab');
-    button.setAttribute('aria-selected', scene.id === activeSceneId);
-    button.innerHTML = `
-      <div>
-        <strong>${scene.title}</strong>
-        <span>${getBackgroundById(scene.background)?.name || 'Arka plan yok'} · ${scene.duration} sn</span>
-      </div>
-      <span>#${index + 1}</span>
-    `;
-    button.addEventListener('click', () => {
-      setActiveScene(scene.id);
-    });
-    button.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      removeScene(scene.id);
-    });
+  if (improvements.length) {
+    const lead = pickRandom(randomPhrases.improveLead);
+    fragments.push(`<p><strong>${lead}</strong> ${improvements.join(', ')}.</p>`);
+  }
 
-    sceneListElement.appendChild(button);
+  fragments.push(`<p>${pickRandom(randomPhrases.outro)}</p>`);
+  return fragments.join('');
+}
+
+function generateGuidanceItems(results) {
+  guidanceList.innerHTML = '';
+  const weakPoints = results.filter((item) => item.score < 7).sort((a, b) => a.score - b.score);
+  const selection = weakPoints.length ? weakPoints : results.slice(0, 2);
+
+  selection.forEach((item) => {
+    const li = document.createElement('li');
+    const strong = document.createElement('strong');
+    strong.textContent = `${item.label} (${item.score.toFixed(1)}/10)`;
+    li.appendChild(strong);
+    const tipPool = improvementTips[item.id] || ['Bu alanı güçlendirmek için daha fazla örnek ekleyin.'];
+    li.appendChild(document.createTextNode(pickRandom(tipPool)));
+    guidanceList.appendChild(li);
   });
 }
 
-function renderTimeline() {
-  sceneTimelineElement.innerHTML = '';
+function composeRevisedPrompt(features, results) {
+  const baseSentence = features.text.split(/[.!?\n]/).find((part) => part.trim().length > 0) || 'verilen konuda bilgi paylaş';
+  const trimmedGoal = baseSentence.trim();
+  const role = pickRandom(roleOptions);
+  const format = pickRandom(formatOptions);
+  const tone = pickRandom(toneOptions);
+  const flexibility = pickRandom(flexibilityOptions);
+  const targetLength = features.hasConstraint
+    ? 'Belirttiğim sınırları koru.'
+    : 'Yanıtı 3 kısa paragrafı geçmeyecek şekilde tut.';
 
-  scenes.forEach((scene, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `timeline-item${scene.id === activeSceneId ? ' active' : ''}`;
-    button.innerHTML = `<span>${scene.duration} sn</span> ${scene.title}`;
-    button.title = 'Seçmek için tıklayın, kaldırmak için sağ tıklayın';
-    button.addEventListener('click', () => {
-      setActiveScene(scene.id);
-    });
-    button.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      removeScene(scene.id);
-    });
-
-    sceneTimelineElement.appendChild(button);
-
-    if (index < scenes.length - 1) {
-      const spacer = document.createElement('div');
-      spacer.className = 'timeline-spacer';
-      sceneTimelineElement.appendChild(spacer);
-    }
-  });
-}
-
-function renderBackgroundGrid() {
-  backgroundGridElement.innerHTML = '';
-  const activeScene = getActiveScene();
-
-  backgrounds.forEach((background) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = `background-card${activeScene?.background === background.id ? ' active' : ''}`;
-    card.style.background = background.gradient;
-    card.dataset.name = background.name;
-    card.title = background.description;
-    card.addEventListener('click', () => {
-      if (!activeScene) return;
-      activeScene.background = background.id;
-      renderBackgroundGrid();
-      renderStage();
-      markStoryboardDirty();
-    });
-
-    backgroundGridElement.appendChild(card);
-  });
-}
-
-function renderCharacterLibrary() {
-  characterLibraryElement.innerHTML = '';
-  const activeScene = getActiveScene();
-
-  characterLibrary.forEach((character) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'character-card';
-    card.title = `${character.name} · ${character.role}`;
-    card.innerHTML = `
-      <div class="character-avatar" style="background: ${character.color}">${character.name.charAt(0)}</div>
-      <strong>${character.name}</strong>
-      <p class="character-role">${character.role}</p>
-    `;
-
-    card.addEventListener('click', () => {
-      if (!activeScene) return;
-      const exists = activeScene.characters.some((actor) => actor.id === character.id);
-      if (!exists) {
-        activeScene.characters.push({
-          id: character.id,
-          name: character.name,
-          role: character.role,
-          color: character.color,
-          expression: 'neutral',
-          action: 'talking'
-        });
-        renderStage();
-        renderActorControls();
-        renderDialogueCharacterSelect();
-        markStoryboardDirty();
-      }
-    });
-
-    const isActive = activeScene?.characters.some((actor) => actor.id === character.id);
-    card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    if (isActive) {
-      card.classList.add('active');
-    }
-
-    characterLibraryElement.appendChild(card);
-  });
-}
-
-function renderStage() {
-  const activeScene = getActiveScene();
-  stageCanvas.innerHTML = '';
-
-  if (!activeScene) {
-    stageCanvas.innerHTML = '<p class="empty-stage">Önce bir sahne ekleyin.</p>';
-    return;
+  const extras = [];
+  if (!features.hasStepCue) {
+    extras.push('Önce kısa bir durum analizi yap, ardından önerilerini sun.');
+  }
+  if (!features.hasAudience) {
+    extras.push('Hedef kitlenin özelliklerini ilk paragrafta vurgula.');
+  }
+  if (!features.hasTone) {
+    extras.push('Tonun boyunca seçtiğin duyguyu tutarlı sürdür.');
   }
 
-  const background = getBackgroundById(activeScene.background);
-  if (background) {
-    stageCanvas.style.background = background.gradient;
-    stageCanvas.setAttribute('aria-label', `${activeScene.title} sahnesi, ${background.name} arka planı`);
-  } else {
-    stageCanvas.removeAttribute('style');
-  }
+  const revised = ` ${trimmedGoal.charAt(0).toUpperCase()}${trimmedGoal.slice(1)}\n- ${role} olarak yanıt ver.\n- Çıktıyı ${format} paylaş ve ${tone}.\n- ${targetLength}\n- ${flexibility}${extras.length ? `\n- ${extras.join('\n- ')}` : ''}`.trim();
 
-  if (!activeScene.characters.length) {
-    stageCanvas.innerHTML = '<p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>';
-    return;
-  }
+  revisedPromptElement.textContent = revised;
+}
 
-  activeScene.characters.forEach((actor) => {
-    const characterEl = document.createElement('div');
-    characterEl.className = 'stage-character';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    avatar.style.background = `linear-gradient(135deg, ${actor.color}, rgba(255, 255, 255, 0.18))`;
-    avatar.textContent = actor.name.charAt(0);
-
-    const nameBadge = document.createElement('div');
-    nameBadge.className = 'badge';
-    nameBadge.textContent = `${actor.name} · ${getExpressionLabel(actor.expression)}`;
-
-    const actionBadge = document.createElement('span');
-    actionBadge.className = 'badge';
-    actionBadge.textContent = getActionLabel(actor.action);
-
-    characterEl.appendChild(avatar);
-    characterEl.appendChild(nameBadge);
-    characterEl.appendChild(actionBadge);
-    stageCanvas.appendChild(characterEl);
+function buildAnalysis(text) {
+  const features = computeFeatures(text);
+  const results = CRITERIA.map((criterion) => {
+    const evaluation = evaluators[criterion.id](features);
+    return { ...criterion, ...evaluation };
   });
-}
 
-function renderActorControls() {
-  const activeScene = getActiveScene();
-  actorControls.innerHTML = '';
+  const overallScore = clamp(results.reduce((total, item) => total + item.score, 0), 0, 100);
+  const strengths = results.filter((item) => item.score >= 8).map((item) => item.label);
+  const improvementAreas = results.filter((item) => item.score < 7).map((item) => item.label);
 
-  if (!activeScene) {
-    const info = document.createElement('p');
-    info.className = 'panel-hint';
-    info.textContent = 'Önce bir sahne seçin.';
-    actorControls.appendChild(info);
-    return;
-  }
+  const intro = pickRandom(randomPhrases.intro);
+  const summary = `${intro} Genel puanınız <strong>${overallScore.toFixed(1)}</strong>.`;
+  narrativeSummary.innerHTML = createNarrative(summary, strengths, improvementAreas);
 
-  if (!activeScene.characters.length) {
-    const hint = document.createElement('p');
-    hint.className = 'panel-hint';
-    hint.textContent = 'Bu sahnede henüz karakter yok. Soldaki kütüphaneden ekleyin.';
-    actorControls.appendChild(hint);
-    return;
-  }
-
-  activeScene.characters.forEach((actor) => {
-    const card = document.createElement('div');
-    card.className = 'actor-card';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'character-avatar';
-    avatar.style.background = actor.color;
-    avatar.textContent = actor.name.charAt(0);
-
-    const info = document.createElement('div');
-    const name = document.createElement('strong');
-    name.textContent = actor.name;
-    const meta = document.createElement('p');
-    meta.className = 'actor-meta';
-    meta.textContent = actor.role;
-
-    const actionsWrapper = document.createElement('div');
-    actionsWrapper.className = 'actor-actions';
-
-    const expressionSelect = document.createElement('select');
-    expressions.forEach((expression) => {
-      const option = document.createElement('option');
-      option.value = expression.id;
-      option.textContent = expression.label;
-      expressionSelect.appendChild(option);
-    });
-    expressionSelect.value = actor.expression;
-    expressionSelect.addEventListener('change', (event) => {
-      actor.expression = event.target.value;
-      renderStage();
-      renderDialogueList();
-      markStoryboardDirty();
-    });
-
-    const actionSelect = document.createElement('select');
-    actions.forEach((action) => {
-      const option = document.createElement('option');
-      option.value = action.id;
-      option.textContent = action.label;
-      actionSelect.appendChild(option);
-    });
-    actionSelect.value = actor.action;
-    actionSelect.addEventListener('change', (event) => {
-      actor.action = event.target.value;
-      renderStage();
-      markStoryboardDirty();
-    });
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'Karakteri kaldır';
-    removeButton.addEventListener('click', () => {
-      removeActorFromScene(actor.id);
-    });
-
-    actionsWrapper.appendChild(expressionSelect);
-    actionsWrapper.appendChild(actionSelect);
-    actionsWrapper.appendChild(removeButton);
-
-    info.appendChild(name);
-    info.appendChild(meta);
-    info.appendChild(actionsWrapper);
-
-    card.appendChild(avatar);
-    card.appendChild(info);
-    actorControls.appendChild(card);
+  criteriaContainer.innerHTML = '';
+  results.forEach((item) => {
+    criteriaContainer.appendChild(buildCriterionCard(item));
   });
+
+  generateGuidanceItems(results);
+  composeRevisedPrompt(features, results);
+
+  return overallScore;
 }
 
-function removeActorFromScene(actorId) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-
-  activeScene.characters = activeScene.characters.filter((actor) => actor.id !== actorId);
-  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.characterId !== actorId);
-
-  renderStage();
-  renderActorControls();
-  renderCharacterLibrary();
-  renderDialogueList();
-  renderDialogueCharacterSelect();
-  markStoryboardDirty();
-}
-
-function renderDialogueCharacterSelect() {
-  const activeScene = getActiveScene();
-  dialogueCharacterSelect.innerHTML = '';
-
-  const narratorOption = document.createElement('option');
-  narratorOption.value = 'narrator';
-  narratorOption.textContent = 'Anlatıcı';
-  dialogueCharacterSelect.appendChild(narratorOption);
-
-  if (!activeScene) {
-    return;
-  }
-
-  activeScene.characters.forEach((actor) => {
-    const option = document.createElement('option');
-    option.value = actor.id;
-    option.textContent = actor.name;
-    dialogueCharacterSelect.appendChild(option);
-  });
-}
-
-function renderDialogueList() {
-  const activeScene = getActiveScene();
-  dialogueListElement.innerHTML = '';
-
-  if (!activeScene || !activeScene.dialogues.length) {
-    const empty = document.createElement('p');
-    empty.className = 'panel-hint';
-    empty.textContent = 'Bu sahne için henüz replik yazılmadı.';
-    dialogueListElement.appendChild(empty);
-    return;
-  }
-
-  activeScene.dialogues.forEach((dialogue, index) => {
-    const card = document.createElement('div');
-    card.className = 'dialogue-card';
-
-    const header = document.createElement('div');
-    header.className = 'dialogue-header';
-    const speaker = document.createElement('strong');
-    speaker.textContent = `${index + 1}. ${dialogue.characterName}`;
-    const tone = document.createElement('span');
-    tone.className = 'dialogue-tone';
-    tone.textContent = dialogue.tone;
-
-    header.appendChild(speaker);
-    const actor = dialogue.characterId === 'narrator'
-      ? null
-      : activeScene.characters.find((item) => item.id === dialogue.characterId);
-    if (actor) {
-      const expression = document.createElement('span');
-      expression.className = 'dialogue-meta';
-      expression.textContent = getExpressionLabel(actor.expression);
-      header.appendChild(expression);
-    }
-    header.appendChild(tone);
-
-    const text = document.createElement('p');
-    text.className = 'dialogue-text';
-    text.textContent = dialogue.text;
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'Repliği sil';
-    removeButton.addEventListener('click', () => {
-      deleteDialogue(dialogue.id);
-    });
-
-    card.appendChild(header);
-    card.appendChild(text);
-    card.appendChild(removeButton);
-
-    dialogueListElement.appendChild(card);
-  });
-}
-
-function deleteDialogue(dialogueId) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-
-  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.id !== dialogueId);
-  renderDialogueList();
-  markStoryboardDirty();
-}
-
-function handleDialogueSubmit(event) {
+analysisForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-
-  const text = dialogueText.value.trim();
+  const text = promptInput.value.trim();
   if (!text) {
-    dialogueText.focus();
+    promptInput.focus();
     return;
   }
 
-  const characterId = dialogueCharacterSelect.value;
-  const tone = dialogueToneSelect.value;
-  const dialogueId = `dlg-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+  const score = buildAnalysis(text);
+  overallScoreElement.textContent = score.toFixed(1);
+  analysisIntro.classList.add('hidden');
+  analysisResults.classList.remove('hidden');
+  copyFeedback.textContent = '';
+  toggleBreakdown(showBreakdownToggle.checked);
+});
 
-  let characterName = 'Anlatıcı';
-  if (characterId !== 'narrator') {
-    const actor = activeScene.characters.find((item) => item.id === characterId);
-    characterName = actor ? actor.name : 'Karakter';
+showBreakdownToggle.addEventListener('change', (event) => {
+  toggleBreakdown(event.target.checked);
+});
+
+function toggleBreakdown(visible) {
+  if (visible) {
+    criteriaContainer.classList.remove('hidden');
+  } else {
+    criteriaContainer.classList.add('hidden');
   }
-
-  activeScene.dialogues.push({
-    id: dialogueId,
-    characterId,
-    characterName,
-    tone,
-    text
-  });
-
-  dialogueText.value = '';
-  renderDialogueList();
-  markStoryboardDirty();
 }
 
-function getBackgroundById(id) {
-  return backgrounds.find((background) => background.id === id) || null;
-}
-
-function getExpressionLabel(expressionId) {
-  return expressions.find((expression) => expression.id === expressionId)?.label || 'Nötr';
-}
-
-function getActionLabel(actionId) {
-  return actions.find((action) => action.id === actionId)?.label || 'Konuşma';
-}
-
-function updateSceneCount() {
-  sceneCountLabel.textContent = scenes.length.toString();
-}
-
-function generateStoryboard() {
-  if (!scenes.length) {
-    storyboardOutput.textContent = 'Storyboard oluşturmak için en az bir sahne ekleyin.';
-    storyboardStatusLabel.textContent = 'Hazır değil';
-    storyboardDirty = true;
-    return;
-  }
-
-  const blocks = scenes.map((scene, index) => {
-    const background = getBackgroundById(scene.background);
-    const characterSummary = scene.characters.length
-      ? scene.characters.map((actor) => `${actor.name} (${getExpressionLabel(actor.expression)}, ${getActionLabel(actor.action)})`).join(', ')
-      : 'Karakter eklenmedi';
-
-    const dialogueSummary = scene.dialogues.length
-      ? scene.dialogues.map((dialogue) => `  - ${dialogue.characterName} [${dialogue.tone}]: ${dialogue.text}`).join('\n')
-      : '  - Replik eklenmedi';
-
-    return `Sahne ${index + 1}: ${scene.title}\nSüre: ${scene.duration} sn | Arka plan: ${background?.name || 'Belirlenmedi'}\nKarakterler: ${characterSummary}\nDiyaloglar:\n${dialogueSummary}`;
-  });
-
-  storyboardOutput.textContent = blocks.join('\n\n');
-  storyboardStatusLabel.textContent = 'Güncel';
-  storyboardDirty = false;
-}
-
-async function copyStoryboardToClipboard() {
-  const content = storyboardOutput.textContent.trim();
+copyPromptBtn.addEventListener('click', async () => {
+  const content = revisedPromptElement.textContent.trim();
   if (!content) {
-    storyboardStatusLabel.textContent = 'Kopyalanacak içerik yok';
-    return;
-  }
-
-  if (!navigator.clipboard) {
-    storyboardStatusLabel.textContent = 'Tarayıcı panoya yazmayı desteklemiyor';
+    copyFeedback.textContent = 'Kopyalanacak içerik yok.';
     return;
   }
 
   try {
     await navigator.clipboard.writeText(content);
-    storyboardStatusLabel.textContent = 'Panoya kopyalandı';
-    if (!storyboardDirty) {
-      setTimeout(() => {
-        storyboardStatusLabel.textContent = 'Güncel';
-      }, 1800);
-    }
+    copyFeedback.textContent = 'Örnek prompt panoya kopyalandı.';
+    setTimeout(() => {
+      copyFeedback.textContent = '';
+    }, 2200);
   } catch (error) {
-    storyboardStatusLabel.textContent = 'Kopyalama başarısız';
+    copyFeedback.textContent = 'Panoya kopyalama başarısız oldu.';
   }
-}
+});
 
-function handleTitleChange(event) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-  activeScene.title = event.target.value || 'Adsız sahne';
-  renderSceneList();
-  renderTimeline();
-  markStoryboardDirty();
-}
+resetBtn.addEventListener('click', () => {
+  overallScoreElement.textContent = '–';
+  analysisIntro.classList.remove('hidden');
+  analysisResults.classList.add('hidden');
+  narrativeSummary.innerHTML = '';
+  criteriaContainer.innerHTML = '';
+  guidanceList.innerHTML = '';
+  revisedPromptElement.textContent = '';
+  copyFeedback.textContent = '';
+});
 
-function handleDurationChange(event) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-  const value = Number.parseInt(event.target.value, 10);
-  activeScene.duration = value;
-  sceneDurationLabel.textContent = `${value} sn`;
-  renderSceneList();
-  renderTimeline();
-  markStoryboardDirty();
-}
-
-function initialise() {
-  addSceneButton.addEventListener('click', addScene);
-  sceneTitleInput.addEventListener('input', handleTitleChange);
-  sceneDurationInput.addEventListener('input', handleDurationChange);
-  dialogueForm.addEventListener('submit', handleDialogueSubmit);
-  generateStoryboardButton.addEventListener('click', generateStoryboard);
-  copyStoryboardButton.addEventListener('click', copyStoryboardToClipboard);
-
-  addScene();
-  renderBackgroundGrid();
-  renderCharacterLibrary();
-  renderDialogueCharacterSelect();
-  updateSceneCount();
-}
-
-initialise();
+// ilk yüklemede breakdown görünür olsun
+toggleBreakdown(showBreakdownToggle.checked);
