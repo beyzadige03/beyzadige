@@ -3,137 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hikâye Sahnesi | Animasyon Stüdyosu</title>
+  <title>Akıllı Otopark Kontrol Paneli</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="halo halo-1"></div>
-  <div class="halo halo-2"></div>
-  <div class="halo halo-3"></div>
-
-  <div class="studio-app">
-    <header class="top-bar" role="banner">
-      <div class="brand">
-        <span class="logo">🎬</span>
+  <div class="app-shell">
+    <header class="app-header" role="banner">
+      <div class="header-main">
         <div>
-          <h1>Hikâye Sahnesi</h1>
-          <p>Plotagon ve Vyond esintili web tabanlı animasyon stüdyosu</p>
+          <h1>Akıllı Otopark İzleme</h1>
+          <p>Arduino destekli maket otopark için gerçek zamanlı doluluk takibi</p>
         </div>
       </div>
-      <div class="meta">
-        <div class="meta-item">
-          <span class="label">Toplam sahne</span>
-          <strong id="sceneCount">0</strong>
+      <div class="header-stats" role="status" aria-live="polite">
+        <div class="stat-card">
+          <span class="label">Boş Alan</span>
+          <strong id="availableCount">0</strong>
         </div>
-        <div class="meta-item">
-          <span class="label">Storyboard durumu</span>
-          <strong id="storyboardStatus">Hazır değil</strong>
+        <div class="stat-card">
+          <span class="label">Dolu Alan</span>
+          <strong id="occupiedCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="label">Süresi Dolan</span>
+          <strong id="expiredCount">0</strong>
         </div>
       </div>
     </header>
 
-    <main class="workspace" role="main">
-      <aside class="panel scene-panel" aria-label="Sahne ve kütüphane yönetimi">
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Sahneler</h2>
-            <button id="addSceneBtn" type="button" class="ghost-btn">+ Yeni sahne</button>
+    <main class="app-main" role="main">
+      <section class="grid-panel" aria-label="Park alanı durumu">
+        <header class="panel-header">
+          <div>
+            <h2>Park Alanı Haritası</h2>
+            <p>Uzun cadde üzerinde sensörlerden gelen anlık veriler işaretlenir.</p>
           </div>
-          <p class="panel-hint">Zaman çizelgesindeki sahneleri seçerek düzenleyin, sıralama otomatik yapılır.</p>
-          <div id="sceneList" class="scene-list" role="tablist" aria-label="Sahne listesi"></div>
-        </section>
+          <div class="legend" aria-hidden="true">
+            <span class="legend-item"><span class="dot dot-available"></span> Müsait</span>
+            <span class="legend-item"><span class="dot dot-occupied"></span> Dolu</span>
+            <span class="legend-item"><span class="dot dot-warning"></span> Son 10 sn uyarısı</span>
+            <span class="legend-item"><span class="dot dot-reserved"></span> Rezerve</span>
+          </div>
+        </header>
 
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Arka Planlar</h2>
-          </div>
-          <p class="panel-hint">Bir sahnenin atmosferini tek tıkla değiştirin.</p>
-          <div id="backgroundGrid" class="background-grid" role="list"></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Karakter Kütüphanesi</h2>
-          </div>
-          <p class="panel-hint">Karakter eklemek için kartlara tıklayın.</p>
-          <div id="characterLibrary" class="character-library" role="list"></div>
-        </section>
-      </aside>
-
-      <section class="stage-panel" aria-live="polite">
-        <div class="stage-toolbar">
-          <div class="toolbar-group">
-            <label for="sceneTitleInput" class="toolbar-label">Aktif sahne</label>
-            <input id="sceneTitleInput" type="text" placeholder="Sahne başlığı" aria-describedby="sceneTitleHelp">
-            <span id="sceneTitleHelp" class="toolbar-hint">Storyboard çıktısında görünecek.</span>
-          </div>
-          <div class="toolbar-group">
-            <label for="sceneDurationInput" class="toolbar-label">Süre</label>
-            <input id="sceneDurationInput" type="range" min="3" max="20" value="8" aria-describedby="sceneDurationLabel">
-            <span id="sceneDurationLabel" class="toolbar-badge">8 sn</span>
-          </div>
+        <div class="map-wrapper">
+          <div id="streetMap" class="street-map" role="list" aria-live="polite"></div>
+          <p class="map-hint">Harita üzerindeki park alanlarına tıklayarak durumunu değiştirin. Sağ tık ile sıfırlayabilirsiniz. Mor alanlar rezerve olduğu için değiştirilemez.</p>
         </div>
 
-        <div id="stageCanvas" class="stage" role="img" aria-label="Sahne önizlemesi">
-          <p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>
-        </div>
-
-        <div class="actor-controls" id="actorControls" aria-live="polite"></div>
-
-        <div class="timeline" aria-label="Zaman çizelgesi">
-          <div id="sceneTimeline" class="timeline-track"></div>
+        <div class="spot-grid-wrapper">
+          <h3>Detaylı Kartlar</h3>
+          <div id="spotGrid" class="spot-grid" role="list" aria-live="polite"></div>
         </div>
       </section>
 
-      <aside class="panel director-panel" aria-label="Senaryo ve storyboard araçları">
+      <aside class="side-panel" aria-label="Kontrol ve bildirimler">
         <section class="panel-section">
-          <div class="panel-header">
-            <h2>Senaryo</h2>
+          <header class="panel-header">
+            <div>
+              <h2>Bağlantı</h2>
+              <p>Arduino Nano/Uno sensör kartından seri veriyi okuyun.</p>
+            </div>
+          </header>
+          <div class="connection-box">
+            <button id="connectBtn" type="button" class="primary-btn">Arduino'ya bağlan</button>
+            <button id="startDemoBtn" type="button" class="ghost-btn">Demo modunu başlat</button>
+            <p class="hint">Gerçek kullanımda Arduino, park alanlarının durumunu JSON satırlarıyla göndermelidir.
+              <code>{"spot":1,"state":"occupied"}</code>
+            </p>
           </div>
-          <form id="dialogueForm" class="dialogue-form">
-            <label for="dialogueCharacterSelect">Konuşmacı</label>
-            <select id="dialogueCharacterSelect"></select>
-
-            <label for="dialogueToneSelect">Konuşma tonu</label>
-            <select id="dialogueToneSelect">
-              <option value="doğal">Doğal</option>
-              <option value="enerjik">Enerjik</option>
-              <option value="profesyonel">Profesyonel</option>
-              <option value="dramatik">Dramatik</option>
-              <option value="anlatı">Anlatı</option>
-            </select>
-
-            <label for="dialogueText">Replik</label>
-            <textarea id="dialogueText" rows="3" placeholder="Replik metnini yazın"></textarea>
-
-            <button type="submit" class="primary-btn">Repliği ekle</button>
-          </form>
         </section>
 
         <section class="panel-section">
-          <div class="panel-header">
-            <h2>Replikler</h2>
-          </div>
-          <div id="dialogueList" class="dialogue-list"></div>
+          <header class="panel-header">
+            <div>
+              <h2>Aktif Süre Ölçer</h2>
+              <p>Her araç için kalan süreyi izleyin. Süre 10 saniye kalınca uyarı gönderilir.</p>
+            </div>
+          </header>
+          <div id="timerList" class="timer-list" role="list"></div>
         </section>
 
         <section class="panel-section">
-          <div class="panel-header">
-            <h2>Storyboard</h2>
-          </div>
-          <div class="storyboard-actions">
-            <button id="generateStoryboard" type="button" class="primary-btn">Storyboard oluştur</button>
-            <button id="copyStoryboard" type="button" class="ghost-btn">Panoya kopyala</button>
-          </div>
-          <div id="storyboardOutput" class="storyboard-output" role="status" aria-live="polite"></div>
+          <header class="panel-header">
+            <div>
+              <h2>Bildirimler</h2>
+              <p>Önemli uyarılar burada görünür.</p>
+            </div>
+          </header>
+          <div id="notificationFeed" class="notification-feed" role="log" aria-live="polite"></div>
         </section>
       </aside>
     </main>
   </div>
 
-  <script src="script.js"></script>
+  <template id="spotTemplate">
+    <article class="spot-card" role="listitem">
+      <div class="spot-header">
+        <h3 class="spot-name"></h3>
+        <span class="spot-tag"></span>
+      </div>
+      <p class="spot-status"></p>
+      <div class="spot-actions">
+        <button type="button" class="spot-action toggle-btn">Durumu değiştir</button>
+        <button type="button" class="spot-action reset-btn">Sıfırla</button>
+      </div>
+    </article>
+  </template>
+
+  <template id="mapSpotTemplate">
+    <button type="button" class="map-spot" role="listitem">
+      <span class="map-spot-label"></span>
+    </button>
+  </template>
+
+  <template id="timerTemplate">
+    <article class="timer-card" role="listitem">
+      <header>
+        <h3></h3>
+        <span class="time-remaining"></span>
+      </header>
+      <p class="timer-status"></p>
+      <button type="button" class="ghost-btn stop-btn">Süreyi sonlandır</button>
+    </article>
+  </template>
+
+  <template id="notificationTemplate">
+    <div class="notification-item">
+      <strong class="notification-title"></strong>
+      <p class="notification-message"></p>
+      <time class="notification-time" datetime=""></time>
+    </div>
+  </template>
+
+  <script src="script.js" type="module"></script>
 </body>
 </html>
