@@ -3,134 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hikâye Sahnesi | Animasyon Stüdyosu</title>
+  <title>Prompt Puanlayıcı | Akıllı Analiz Asistanı</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="halo halo-1"></div>
-  <div class="halo halo-2"></div>
-  <div class="halo halo-3"></div>
-
-  <div class="studio-app">
-    <header class="top-bar" role="banner">
-      <div class="brand">
-        <span class="logo">🎬</span>
-        <div>
-          <h1>Hikâye Sahnesi</h1>
-          <p>Plotagon ve Vyond esintili web tabanlı animasyon stüdyosu</p>
-        </div>
+  <div class="background-gradient" aria-hidden="true"></div>
+  <div class="app-shell">
+    <header class="page-header" role="banner">
+      <div>
+        <p class="eyebrow">Prompt geliştirme laboratuvarı</p>
+        <h1>Prompt Puanlayıcı</h1>
+        <p class="lead">Prompt’unuzu 10 kritere göre inceleyen, 0–100 arası puanlayan ve her seferinde yeni ipuçlarıyla sizi daha güçlü metinler yazmaya yönlendiren akıllı asistan.</p>
       </div>
-      <div class="meta">
-        <div class="meta-item">
-          <span class="label">Toplam sahne</span>
-          <strong id="sceneCount">0</strong>
-        </div>
-        <div class="meta-item">
-          <span class="label">Storyboard durumu</span>
-          <strong id="storyboardStatus">Hazır değil</strong>
-        </div>
+      <div class="scorecard" aria-live="polite">
+        <p>Son puan</p>
+        <strong id="overallScore">–</strong>
       </div>
     </header>
 
-    <main class="workspace" role="main">
-      <aside class="panel scene-panel" aria-label="Sahne ve kütüphane yönetimi">
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Sahneler</h2>
-            <button id="addSceneBtn" type="button" class="ghost-btn">+ Yeni sahne</button>
-          </div>
-          <p class="panel-hint">Zaman çizelgesindeki sahneleri seçerek düzenleyin, sıralama otomatik yapılır.</p>
-          <div id="sceneList" class="scene-list" role="tablist" aria-label="Sahne listesi"></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Arka Planlar</h2>
-          </div>
-          <p class="panel-hint">Bir sahnenin atmosferini tek tıkla değiştirin.</p>
-          <div id="backgroundGrid" class="background-grid" role="list"></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Karakter Kütüphanesi</h2>
-          </div>
-          <p class="panel-hint">Karakter eklemek için kartlara tıklayın.</p>
-          <div id="characterLibrary" class="character-library" role="list"></div>
-        </section>
-      </aside>
-
-      <section class="stage-panel" aria-live="polite">
-        <div class="stage-toolbar">
-          <div class="toolbar-group">
-            <label for="sceneTitleInput" class="toolbar-label">Aktif sahne</label>
-            <input id="sceneTitleInput" type="text" placeholder="Sahne başlığı" aria-describedby="sceneTitleHelp">
-            <span id="sceneTitleHelp" class="toolbar-hint">Storyboard çıktısında görünecek.</span>
-          </div>
-          <div class="toolbar-group">
-            <label for="sceneDurationInput" class="toolbar-label">Süre</label>
-            <input id="sceneDurationInput" type="range" min="3" max="20" value="8" aria-describedby="sceneDurationLabel">
-            <span id="sceneDurationLabel" class="toolbar-badge">8 sn</span>
-          </div>
+    <main class="content" role="main">
+      <section class="panel input-panel" aria-label="Prompt analizi formu">
+        <div class="panel-header">
+          <h2>Prompt’unuzu girin</h2>
+          <p>Her analizde farklı bir öğretici geri bildirim alırsınız. Prompt’unuza amaç, bağlam, rol ve ton bilgilerini eklemeyi deneyin.</p>
         </div>
-
-        <div id="stageCanvas" class="stage" role="img" aria-label="Sahne önizlemesi">
-          <p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>
-        </div>
-
-        <div class="actor-controls" id="actorControls" aria-live="polite"></div>
-
-        <div class="timeline" aria-label="Zaman çizelgesi">
-          <div id="sceneTimeline" class="timeline-track"></div>
-        </div>
+        <form id="analysisForm" class="analysis-form">
+          <label for="promptInput" class="sr-only">Değerlendirmek istediğiniz prompt</label>
+          <textarea id="promptInput" rows="8" placeholder="Örnek: Deneyimli bir ürün yöneticisi olarak yeni bir meditasyon uygulaması için 400 kelimelik bir tanıtım yazısı hazırla..." required></textarea>
+          <div class="form-footer">
+            <label class="checkbox">
+              <input type="checkbox" id="showBreakdown" checked>
+              <span>Kriter bazında puanları göster</span>
+            </label>
+            <div class="button-group">
+              <button type="reset" class="ghost-button" id="resetBtn">Temizle</button>
+              <button type="submit" class="primary-button">Prompt’u analiz et</button>
+            </div>
+          </div>
+        </form>
       </section>
 
-      <aside class="panel director-panel" aria-label="Senaryo ve storyboard araçları">
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Senaryo</h2>
-          </div>
-          <form id="dialogueForm" class="dialogue-form">
-            <label for="dialogueCharacterSelect">Konuşmacı</label>
-            <select id="dialogueCharacterSelect"></select>
+      <section class="panel results-panel" aria-live="polite">
+        <div id="analysisIntro" class="placeholder">
+          <p>Henüz bir analiz yok. Prompt’unuzu gönderdiğinizde güçlü yönler, geliştirme önerileri ve örnek revize prompt otomatik oluşur.</p>
+        </div>
+        <div id="analysisResults" class="hidden">
+          <div class="narrative" id="narrativeSummary"></div>
 
-            <label for="dialogueToneSelect">Konuşma tonu</label>
-            <select id="dialogueToneSelect">
-              <option value="doğal">Doğal</option>
-              <option value="enerjik">Enerjik</option>
-              <option value="profesyonel">Profesyonel</option>
-              <option value="dramatik">Dramatik</option>
-              <option value="anlatı">Anlatı</option>
-            </select>
+          <div id="criteriaContainer" class="criteria-grid"></div>
 
-            <label for="dialogueText">Replik</label>
-            <textarea id="dialogueText" rows="3" placeholder="Replik metnini yazın"></textarea>
+          <section class="panel-subsection">
+            <header>
+              <h3>Gelişim rehberi</h3>
+            </header>
+            <ul id="guidanceList" class="guidance-list"></ul>
+          </section>
 
-            <button type="submit" class="primary-btn">Repliği ekle</button>
-          </form>
-        </section>
-
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Replikler</h2>
-          </div>
-          <div id="dialogueList" class="dialogue-list"></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="panel-header">
-            <h2>Storyboard</h2>
-          </div>
-          <div class="storyboard-actions">
-            <button id="generateStoryboard" type="button" class="primary-btn">Storyboard oluştur</button>
-            <button id="copyStoryboard" type="button" class="ghost-btn">Panoya kopyala</button>
-          </div>
-          <div id="storyboardOutput" class="storyboard-output" role="status" aria-live="polite"></div>
-        </section>
-      </aside>
+          <section class="panel-subsection">
+            <header>
+              <h3>Örnek revize prompt</h3>
+            </header>
+            <p id="revisedPrompt" class="revised-prompt" tabindex="0"></p>
+            <button id="copyPromptBtn" type="button" class="ghost-button small">Örneği kopyala</button>
+            <span id="copyFeedback" class="copy-feedback" role="status" aria-live="polite"></span>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
