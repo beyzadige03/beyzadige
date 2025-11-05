@@ -3,142 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Akıllı Otopark Kontrol Paneli</title>
+  <title>Moda Tasarım Çizim Atölyesi</title>
+  <meta name="description" content="Moda tasarım çizimini sıfırdan öğrenmek için adım adım rehber, pratik çalışma alanı ve çizim değerlendirme aracı.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header" role="banner">
-      <div class="header-main">
-        <div>
-          <h1>Akıllı Otopark İzleme</h1>
-          <p>Arduino destekli maket otopark için gerçek zamanlı doluluk takibi</p>
+  <div class="page-shell">
+    <header class="hero" role="banner">
+      <div class="hero-text">
+        <p class="hero-eyebrow">Moda Tasarım Stüdyosu</p>
+        <h1>Çizimle moda tasarımını <span class="highlight">sıfırdan</span> öğren.</h1>
+        <p class="hero-lead">Temel çizgi egzersizlerinden podyum siluetine kadar her adımda rehberlik eden etkileşimli yol haritası, yüklediğin çizimleri analiz ederek gelişimini ölçer.</p>
+        <div class="hero-actions">
+          <button id="startFirstLesson" type="button" class="btn btn-primary">İlk derse başla</button>
+          <button id="scrollToWorkspace" type="button" class="btn btn-ghost">Çalışma alanını gör</button>
         </div>
+        <dl class="hero-metrics" aria-label="Program istatistikleri">
+          <div>
+            <dt>Adım adım ders</dt>
+            <dd><strong>18</strong> mikro görev</dd>
+          </div>
+          <div>
+            <dt>Geri bildirim</dt>
+            <dd><strong>Anında</strong> değerlendirme</dd>
+          </div>
+          <div>
+            <dt>Seviye</dt>
+            <dd><strong>Başlangıç</strong> → İleri</dd>
+          </div>
+        </dl>
       </div>
-      <div class="header-stats" role="status" aria-live="polite">
-        <div class="stat-card">
-          <span class="label">Boş Alan</span>
-          <strong id="availableCount">0</strong>
+      <aside class="hero-board" aria-label="Örnek ders kartı">
+        <div class="board-card focus">
+          <header>
+            <span class="stage">Modül 1</span>
+            <strong>Çizgi Kontrolü</strong>
+          </header>
+          <p>Kalem basıncını dengele ve moda figürü için akıcı çizgiler oluştur.</p>
+          <ul>
+            <li>Isınma: Sürekli çizgi</li>
+            <li>Ölçü: 9 baş boyu</li>
+            <li>Görev: 3 siluet varyasyonu</li>
+          </ul>
         </div>
-        <div class="stat-card">
-          <span class="label">Dolu Alan</span>
-          <strong id="occupiedCount">0</strong>
+        <div class="board-card">
+          <header>
+            <span class="stage">Son değerlendirme</span>
+            <strong>81 / 100</strong>
+          </header>
+          <p>Çizgiler net, gövde dengeli. Omuz hizasını biraz yükselt.</p>
         </div>
-        <div class="stat-card">
-          <span class="label">Süresi Dolan</span>
-          <strong id="expiredCount">0</strong>
-        </div>
-      </div>
+      </aside>
     </header>
 
-    <main class="app-main" role="main">
-      <section class="grid-panel" aria-label="Park alanı durumu">
-        <header class="panel-header">
-          <div>
-            <h2>Park Alanı Haritası</h2>
-            <p>Uzun cadde üzerinde sensörlerden gelen anlık veriler işaretlenir.</p>
+    <main>
+      <section class="module-section" id="lessonMap" aria-labelledby="lessonMapTitle">
+        <div class="section-intro">
+          <h2 id="lessonMapTitle">Öğrenme Yol Haritası</h2>
+          <p>Her modül moda figürü çiziminin temel bir aşamasına odaklanır. İlerleme yüzdesi tamamladığın mikro görevlerle güncellenir.</p>
+          <div class="progress-wrapper" aria-hidden="true">
+            <span id="overallProgress" class="progress-value">0%</span>
+            <div class="progress-bar">
+              <div id="overallProgressBar" class="progress-bar-fill"></div>
+            </div>
           </div>
-          <div class="legend" aria-hidden="true">
-            <span class="legend-item"><span class="dot dot-available"></span> Müsait</span>
-            <span class="legend-item"><span class="dot dot-occupied"></span> Dolu</span>
-            <span class="legend-item"><span class="dot dot-warning"></span> Son 10 sn uyarısı</span>
-            <span class="legend-item"><span class="dot dot-reserved"></span> Rezerve</span>
-          </div>
-        </header>
-
-        <div class="map-wrapper">
-          <div id="streetMap" class="street-map" role="list" aria-live="polite"></div>
-          <p class="map-hint">Harita üzerindeki park alanlarına tıklayarak durumunu değiştirin. Sağ tık ile sıfırlayabilirsiniz. Mor alanlar rezerve olduğu için değiştirilemez.</p>
         </div>
-
-        <div class="spot-grid-wrapper">
-          <h3>Detaylı Kartlar</h3>
-          <div id="spotGrid" class="spot-grid" role="list" aria-live="polite"></div>
+        <div class="module-grid">
+          <nav id="moduleList" class="module-list" aria-label="Modül listesi"></nav>
+          <article id="stepDetail" class="step-detail" aria-live="polite">
+            <header class="step-detail-header">
+              <p class="step-meta"></p>
+              <h3></h3>
+              <p class="step-description"></p>
+            </header>
+            <div class="step-content">
+              <section>
+                <h4>Uygulama Adımları</h4>
+                <ol class="step-checklist" id="stepChecklist"></ol>
+              </section>
+              <section>
+                <h4>Gözlem İpuçları</h4>
+                <ul class="step-tips" id="stepTips"></ul>
+              </section>
+              <section>
+                <h4>Hedeflenen Kazanım</h4>
+                <p id="stepOutcome"></p>
+              </section>
+              <section>
+                <h4>Kaynaklar</h4>
+                <ul class="step-resources" id="stepResources"></ul>
+              </section>
+            </div>
+            <footer class="step-footer">
+              <button id="markStepDone" type="button" class="btn btn-primary">Adımı tamamladım</button>
+              <button id="openWorkbook" type="button" class="btn btn-secondary">Çalışma sayfasını indir</button>
+            </footer>
+          </article>
         </div>
       </section>
 
-      <aside class="side-panel" aria-label="Kontrol ve bildirimler">
-        <section class="panel-section">
-          <header class="panel-header">
-            <div>
-              <h2>Bağlantı</h2>
-              <p>Arduino Nano/Uno sensör kartından seri veriyi okuyun.</p>
-            </div>
-          </header>
-          <div class="connection-box">
-            <button id="connectBtn" type="button" class="primary-btn">Arduino'ya bağlan</button>
-            <button id="startDemoBtn" type="button" class="ghost-btn">Demo modunu başlat</button>
-            <p class="hint">Gerçek kullanımda Arduino, park alanlarının durumunu JSON satırlarıyla göndermelidir.
-              <code>{"spot":1,"state":"occupied"}</code>
-            </p>
+      <section class="workspace" id="workspace" aria-labelledby="workspaceTitle">
+        <div class="workspace-header">
+          <div>
+            <h2 id="workspaceTitle">Çalışma Alanı</h2>
+            <p>Aktif adımın yönergeleri yanında canlı notlarını tut. Her tamamlanan görev portföyüne otomatik kaydedilir.</p>
           </div>
-        </section>
-
-        <section class="panel-section">
-          <header class="panel-header">
-            <div>
-              <h2>Aktif Süre Ölçer</h2>
-              <p>Her araç için kalan süreyi izleyin. Süre 10 saniye kalınca uyarı gönderilir.</p>
+          <div class="workspace-progress">
+            <span>Modül ilerlemesi</span>
+            <strong id="moduleProgressLabel">0 / 0</strong>
+          </div>
+        </div>
+        <div class="workspace-body">
+          <div class="workspace-notes">
+            <h3>Not defteri</h3>
+            <textarea id="notesField" placeholder="Çizim sırasında fark ettiğin oran, çizgi veya gölge notlarını buraya yaz."></textarea>
+            <div class="note-tools">
+              <button id="saveNotes" type="button" class="btn btn-secondary">Notu kaydet</button>
+              <span id="notesSaved" role="status" aria-live="polite"></span>
             </div>
-          </header>
-          <div id="timerList" class="timer-list" role="list"></div>
-        </section>
+          </div>
+          <div class="workspace-rubric">
+            <h3>Öz değerlendirme rubriği</h3>
+            <ul id="selfReview" class="rubric-list"></ul>
+            <p class="rubric-hint">Her kritere 1 (başlangıç) - 4 (usta) arasında puan ver. Sistem, yüklediğin çizimi analiz ederken bu puanı referans alır.</p>
+          </div>
+          <div class="workspace-timeline">
+            <h3>Günün çizim rutini</h3>
+            <ol id="dailyRoutine" class="routine-list"></ol>
+          </div>
+        </div>
+      </section>
 
-        <section class="panel-section">
-          <header class="panel-header">
-            <div>
-              <h2>Bildirimler</h2>
-              <p>Önemli uyarılar burada görünür.</p>
+      <section class="evaluation" id="evaluation" aria-labelledby="evaluationTitle">
+        <div class="evaluation-header">
+          <div>
+            <h2 id="evaluationTitle">Çizimini yükle ve yapay zekâ destekli geri bildirim al</h2>
+            <p>PNG veya JPG formatındaki çizimini yüklediğinde sistem çizgi netliği, oran dengesi ve ton dağılımını analiz eder. Sonuçlar geçmiş tablosuna kaydedilir.</p>
+          </div>
+          <div class="evaluation-info">
+            <span class="badge">Beta</span>
+            <p>Analiz tamamen tarayıcında yapılır, görseller sunucuya gönderilmez.</p>
+          </div>
+        </div>
+        <div class="evaluation-content">
+          <div class="upload-panel" aria-label="Çizim yükleme paneli">
+            <label class="upload-dropzone" for="drawingUpload">
+              <span class="icon" aria-hidden="true">⇪</span>
+              <strong>Çizimini sürükle & bırak</strong>
+              <span>veya dosya seç</span>
+              <small>Desteklenen formatlar: JPG, PNG. Maksimum 10 MB.</small>
+            </label>
+            <input id="drawingUpload" type="file" accept="image/png, image/jpeg" aria-describedby="uploadHint">
+            <p id="uploadHint" class="upload-hint">Yükleme tamamlandığında çizim otomatik olarak analiz edilir.</p>
+            <div class="upload-preview">
+              <img id="drawingPreview" alt="" hidden>
+              <p id="previewPlaceholder">Henüz çizim yüklenmedi.</p>
             </div>
-          </header>
-          <div id="notificationFeed" class="notification-feed" role="log" aria-live="polite"></div>
-        </section>
-      </aside>
+          </div>
+          <div class="analysis-panel">
+            <div class="score-card">
+              <p class="score-label">Genel skor</p>
+              <strong id="overallScore">-</strong>
+              <p id="scoreComment"></p>
+            </div>
+            <ul class="metric-list" id="metricList"></ul>
+            <div class="feedback-panel">
+              <h3>Geri bildirim</h3>
+              <ul id="feedbackList"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="history-panel">
+          <h3>Analiz geçmişi</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Dosya</th>
+                <th>Skor</th>
+                <th>Not</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="resource-section" aria-labelledby="resourceTitle">
+        <div class="section-intro">
+          <h2 id="resourceTitle">Ek Kaynaklar</h2>
+          <p>Çalışma sonrası göz gezdireceğin referanslar ve mikro görevler.</p>
+        </div>
+        <div class="resource-grid" id="resourceGrid"></div>
+      </section>
     </main>
+
+    <footer class="site-footer">
+      <p>Moda Tasarım Çizim Atölyesi &copy; 2024 — Çiz, değerlendir, geliştir.</p>
+    </footer>
   </div>
 
-  <template id="spotTemplate">
-    <article class="spot-card" role="listitem">
-      <div class="spot-header">
-        <h3 class="spot-name"></h3>
-        <span class="spot-tag"></span>
-      </div>
-      <p class="spot-status"></p>
-      <div class="spot-actions">
-        <button type="button" class="spot-action toggle-btn">Durumu değiştir</button>
-        <button type="button" class="spot-action reset-btn">Sıfırla</button>
-      </div>
-    </article>
-  </template>
-
-  <template id="mapSpotTemplate">
-    <button type="button" class="map-spot" role="listitem">
-      <span class="map-spot-label"></span>
-    </button>
-  </template>
-
-  <template id="timerTemplate">
-    <article class="timer-card" role="listitem">
-      <header>
-        <h3></h3>
-        <span class="time-remaining"></span>
-      </header>
-      <p class="timer-status"></p>
-      <button type="button" class="ghost-btn stop-btn">Süreyi sonlandır</button>
-    </article>
-  </template>
-
-  <template id="notificationTemplate">
-    <div class="notification-item">
-      <strong class="notification-title"></strong>
-      <p class="notification-message"></p>
-      <time class="notification-time" datetime=""></time>
-    </div>
-  </template>
-
+  <canvas id="analysisCanvas" hidden></canvas>
   <script src="script.js" type="module"></script>
 </body>
 </html>
