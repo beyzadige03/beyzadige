@@ -460,6 +460,154 @@ dl dd {
   gap: 8px;
 }
 
+.calendar {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: clamp(28px, 4vw, 48px);
+  display: grid;
+  gap: clamp(24px, 3vw, 36px);
+  box-shadow: var(--shadow);
+}
+
+.calendar-status {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.calendar-day {
+  background: var(--bg-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  position: relative;
+  min-height: 180px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.calendar-day:hover,
+.calendar-day:focus-within {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(62, 111, 59, 0.15);
+}
+
+.calendar-day header {
+  display: grid;
+  gap: 4px;
+}
+
+.calendar-weekday {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+  color: var(--text-soft);
+}
+
+.calendar-day h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.calendar-rain {
+  margin: 0;
+  font-size: 1.2rem;
+  font-family: 'Fira Code', 'Manrope', monospace;
+  color: var(--accent-strong);
+}
+
+.calendar-advice {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.calendar-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.calendar-good {
+  background: linear-gradient(180deg, rgba(91, 140, 81, 0.1), rgba(91, 140, 81, 0.02));
+}
+
+.calendar-good .calendar-pill {
+  background: rgba(91, 140, 81, 0.18);
+  color: var(--accent-strong);
+}
+
+.calendar-caution {
+  background: linear-gradient(180deg, rgba(238, 197, 114, 0.14), rgba(238, 197, 114, 0.04));
+}
+
+.calendar-caution .calendar-pill {
+  background: rgba(238, 197, 114, 0.28);
+  color: #8a6300;
+}
+
+.calendar-wet {
+  background: linear-gradient(180deg, rgba(85, 129, 181, 0.12), rgba(85, 129, 181, 0.04));
+}
+
+.calendar-wet .calendar-pill {
+  background: rgba(85, 129, 181, 0.3);
+  color: #29507d;
+}
+
+.calendar-empty {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.calendar-legend {
+  margin: 0;
+  color: var(--text-soft);
+  display: grid;
+  gap: 8px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.legend-good {
+  background: rgba(91, 140, 81, 0.8);
+}
+
+.legend-caution {
+  background: rgba(238, 197, 114, 0.8);
+}
+
+.legend-wet {
+  background: rgba(85, 129, 181, 0.8);
+}
+
+.calendar-updated {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
 .rotation {
   background: rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-lg);
@@ -537,6 +685,10 @@ dl dd {
     grid-template-columns: 1fr;
   }
 
+  .calendar-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
   .rotation-steps li {
     padding-left: 56px;
   }
@@ -549,12 +701,17 @@ dl dd {
 
   .hero,
   .climate,
+  .calendar,
   .rotation {
     border-radius: 20px;
   }
 
   .rainfall-bars {
     gap: 8px;
+  }
+
+  .calendar-grid {
+    grid-template-columns: 1fr;
   }
 
   .rotation-steps li::before {

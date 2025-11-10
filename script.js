@@ -138,6 +138,9 @@ const scenarioTitle = document.querySelector('#scenarioTitle');
 const scenarioDescription = document.querySelector('#scenarioDescription');
 const recommendedCrops = document.querySelector('#recommendedCrops');
 const rainfallBars = document.querySelector('#rainfallBars');
+const calendarGrid = document.querySelector('#calendarGrid');
+const calendarStatus = document.querySelector('#calendarStatus');
+const calendarUpdated = document.querySelector('#calendarUpdated');
 
 function formatRainfall(value) {
   return `${value} mm`;
@@ -199,3 +202,110 @@ function renderRainfallChart() {
 rainfallInput.addEventListener('input', updateScenario);
 renderRainfallChart();
 updateScenario();
+
+function getAdvisory(amount) {
+  if (amount < 1) {
+    return {
+      label: 'Uygun',
+      description: 'Toprak hazırlığı, gübreleme ve ekim için elverişli.',
+      tone: 'good'
+    };
+  }
+
+  if (amount < 5) {
+    return {
+      label: 'Hafif yağış',
+      description: 'Toprak nemi artar. Ekipman hazırlığı yap, ekimi yağış durunca başlat.',
+      tone: 'caution'
+    };
+  }
+
+  return {
+    label: 'Yoğun yağış',
+    description: 'Tarlaya girme. Yüzey akışını azaltmak için drenaj kanallarını kontrol et.',
+    tone: 'wet'
+  };
+}
+
+function renderCalendar(days, precipitation) {
+  if (!calendarGrid) return;
+
+  calendarGrid.innerHTML = '';
+
+  const dateFormatter = new Intl.DateTimeFormat('tr-TR', { month: 'short', day: 'numeric' });
+  const weekdayFormatter = new Intl.DateTimeFormat('tr-TR', { weekday: 'short' });
+
+  days.forEach((day, index) => {
+    const amount = Number(precipitation[index] ?? 0);
+    const advisory = getAdvisory(amount);
+    const date = new Date(day);
+    const card = document.createElement('article');
+    card.className = `calendar-day calendar-${advisory.tone}`;
+    card.innerHTML = `
+      <header>
+        <p class="calendar-weekday">${weekdayFormatter.format(date)}</p>
+        <h3>${dateFormatter.format(date)}</h3>
+      </header>
+      <p class="calendar-rain">${amount.toFixed(1)}&nbsp;mm</p>
+      <p class="calendar-advice">${advisory.description}</p>
+      <span class="calendar-pill">${advisory.label}</span>
+    `;
+    calendarGrid.appendChild(card);
+  });
+
+  calendarGrid.setAttribute('aria-busy', 'false');
+}
+
+async function loadCalendar() {
+  if (!calendarGrid || !calendarStatus) return;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const url =
+      'https://api.open-meteo.com/v1/forecast?latitude=38.07&longitude=30.16&daily=precipitation_sum&forecast_days=14&timezone=Europe%2FIstanbul';
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const days = data?.daily?.time;
+    const precipitation = data?.daily?.precipitation_sum;
+
+    if (!Array.isArray(days) || !Array.isArray(precipitation) || days.length === 0) {
+      throw new Error('Eksik veri');
+    }
+
+    renderCalendar(days, precipitation);
+
+    const workableDays = precipitation.filter((amount) => Number(amount ?? 0) < 1).length;
+    const cautionDays = precipitation.filter((amount) => Number(amount ?? 0) >= 1 && Number(amount ?? 0) < 5).length;
+    const wetDays = precipitation.length - workableDays - cautionDays;
+
+    calendarStatus.textContent = `Önümüzdeki ${precipitation.length} günün ${workableDays} günü tarlaya girmek için elverişli görünüyor. ${cautionDays} günde hafif yağış, ${wetDays} günde kuvvetli yağış bekleniyor.`;
+
+    if (calendarUpdated) {
+      const now = new Date();
+      calendarUpdated.dateTime = now.toISOString();
+      calendarUpdated.textContent = new Intl.DateTimeFormat('tr-TR', {
+        dateStyle: 'long',
+        timeStyle: 'short'
+      }).format(now);
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      calendarStatus.textContent = 'Meteoroloji verisi zaman aşımına uğradı. İnternet bağlantınızı kontrol edin.';
+    } else {
+      calendarStatus.textContent = 'Meteoroloji verisi alınamadı. Lütfen daha sonra tekrar deneyin.';
+    }
+
+    calendarGrid.innerHTML = '<p class="calendar-empty">Çevrimdışı modda varsayılan planlara devam edebilirsin.</p>';
+    calendarGrid.setAttribute('aria-busy', 'false');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+loadCalendar();

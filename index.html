@@ -160,6 +160,19 @@
         </div>
       </section>
 
+      <section class="calendar" aria-labelledby="calendarTitle">
+        <header class="section-intro">
+          <h2 id="calendarTitle">Canlı yağış takvimi</h2>
+          <p>Dinar koordinatları için Open-Meteo verileriyle 14 günlük yağış tahmini ve tarla işleri önerileri.</p>
+          <p id="calendarStatus" class="calendar-status" role="status" aria-live="polite">Meteoroloji verisi yükleniyor…</p>
+        </header>
+        <div id="calendarGrid" class="calendar-grid" aria-live="polite" aria-busy="true"></div>
+        <footer class="calendar-legend">
+          <p><span class="legend-dot legend-good"></span> Saha çalışmasına uygun &middot; <span class="legend-dot legend-caution"></span> Hafif yağış &ndash; hazırlık yap &middot; <span class="legend-dot legend-wet"></span> Yoğun yağış &ndash; tarlaya girme</p>
+          <p class="calendar-updated">Son güncelleme: <time id="calendarUpdated" datetime="">Bekleniyor</time></p>
+        </footer>
+      </section>
+
       <section class="rotation" aria-labelledby="rotationTitle">
         <header class="section-intro">
           <h2 id="rotationTitle">3 yıllık örnek rotasyon</h2>
