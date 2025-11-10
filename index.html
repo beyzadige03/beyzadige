@@ -3,203 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dinar Tarla Planlama Rehberi</title>
-  <meta name="description" content="Dinar ve Göller Bölgesi çiftçileri için yıllık yağış miktarına göre mahsul seçimi, ekim takvimi ve gübre önerileri.">
+  <title>Türkiye Canlı Fay Hattı İzleme</title>
+  <meta name="description" content="AFAD resmi verileriyle canlı fay hatları ve son depremleri izleyin. Son 24 saatteki hareketliliği harita üzerinde görün ve bölgesel risk değerlendirmesini takip edin.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha512-VQ7M54f8Z1sCwQVWwtIgMeY9ycYzaO+F6DRKCVh0b07XHtcwPa5wPLXnwI75PwQxzb62LF8A7b+0g2GCEhZHJQ==" crossorigin="">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="page">
     <header class="hero" role="banner">
       <div class="hero-content">
-        <p class="hero-eyebrow">Göller Bölgesi Tarım Rehberi</p>
-        <h1>Dinar'da yağışa göre <span class="highlight">ekim planı</span> oluştur.</h1>
-        <p class="hero-lead">Kuru koşullardan daha nemli yıllara kadar farklı yağış senaryolarına göre hangi mahsulün hangi dönemde ve ne kadar tohumla ekileceğini keşfet.</p>
-        <dl class="hero-metrics" aria-label="Dinar iklim özeti">
+        <p class="hero-eyebrow">Türkiye Fay İzleme</p>
+        <h1>Canlı <span class="highlight">fay hatları</span> ve son <span class="highlight">deprem aktivitesi</span></h1>
+        <p class="hero-lead">AFAD Deprem Dairesi verileriyle, son 24 saat içinde diri fay hatları üzerinde görülen hareketliliği harita üzerinden takip edin. Bölgesel sarsıntı yoğunluğu ve olası etkilenme bölgelerini hızla analiz edin.</p>
+        <div class="hero-meta">
           <div>
-            <dt>Rakım</dt>
-            <dd>880&nbsp;m</dd>
+            <span>Veri kaynağı</span>
+            <strong>AFAD Deprem Dairesi Başkanlığı</strong>
           </div>
           <div>
-            <dt>Ortalama yağış</dt>
-            <dd>480&nbsp;mm / yıl</dd>
+            <span>Güncelleme aralığı</span>
+            <strong>5 dakika</strong>
           </div>
           <div>
-            <dt>Toprak</dt>
-            <dd>Killi-tınlı</dd>
+            <span>Kapsam</span>
+            <strong>Son 24 saat</strong>
+          </div>
+        </div>
+      </div>
+      <aside class="hero-panel" aria-label="Son güncelleme bilgisi">
+        <div class="panel-header">
+          <span class="panel-badge">Canlı Durum</span>
+          <p>Son 24 saatte kaydedilen depremler ve etkilenen bölgeler bu panelde özetlenir.</p>
+        </div>
+        <dl class="panel-stats" aria-live="polite">
+          <div>
+            <dt>Toplam deprem</dt>
+            <dd id="statTotal">-</dd>
+          </div>
+          <div>
+            <dt>En güçlü sarsıntı</dt>
+            <dd id="statStrongest">-</dd>
+          </div>
+          <div>
+            <dt>Ortalama magnitüd</dt>
+            <dd id="statAverage">-</dd>
           </div>
         </dl>
-      </div>
-      <aside class="hero-panel" aria-label="Yağış senaryosu">
-        <div class="panel-header">
-          <span class="panel-badge">Canlı araç</span>
-          <p>Yıllık yağışı seç, önerilen ürün listesini hemen gör.</p>
-        </div>
-        <div class="panel-body">
-          <label for="rainfallInput">Yıllık yağış (mm)</label>
-          <div class="slider-display">
-            <input id="rainfallInput" type="range" min="280" max="620" value="480" step="10" aria-describedby="rainfallHint">
-            <output id="rainfallValue" for="rainfallInput">480 mm</output>
-          </div>
-          <p id="rainfallHint" class="panel-hint">Kaydırıcıyı hareket ettirerek kurak, normal veya yağışlı yılları simüle edebilirsin.</p>
-          <div class="panel-summary">
-            <h3 id="scenarioTitle">Orta nemli yıl</h3>
-            <p id="scenarioDescription">Ekmeklik buğday, yulaf ve yem bezelyesi yağışlı kışlardan iyi yararlanır. Sulu alanlarda kanola ekimi yapılabilir.</p>
-          </div>
-        </div>
+        <p class="panel-updated">Son güncelleme: <time id="updatedAt" datetime="">-</time></p>
       </aside>
     </header>
 
     <main>
-      <section id="planner" class="planner" aria-labelledby="plannerTitle">
+      <section class="map-section" aria-labelledby="mapTitle">
         <header class="section-intro">
-          <h2 id="plannerTitle">Yağışa göre mahsul önerileri</h2>
-          <p>Yağış aralığına göre en dayanıklı türler, ekim zamanları ve tohum-gübre miktarlarını aşağıda bulabilirsin. Listeler senaryoya göre güncellenir.</p>
+          <h2 id="mapTitle">Harita: Diri fay hatları ve son depremler</h2>
+          <p>Fay hatları Leaflet haritası üzerinde kırmızı tonlarla vurgulanmıştır. Son 24 saatteki depremler magnitüdüne göre ölçekli işaretçilerle gösterilir.</p>
         </header>
-        <div id="recommendedCrops" class="crop-grid" aria-live="polite"></div>
-      </section>
-
-      <section class="guides" aria-labelledby="guideTitle">
-        <header class="section-intro">
-          <h2 id="guideTitle">Başlıca ürün rehberleri</h2>
-          <p>Dinar çevresinde yaygın olarak yetiştirilen buğday, arpa ve karabuğday için ekim penceresi, tohum ve gübreleme özetleri.</p>
-        </header>
-        <div class="guide-grid">
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Kışlık tahıl</p>
-              <h3>Buğday</h3>
-              <p class="crop-window">Ekim &ndash; Kasım</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>18&ndash;20&nbsp;kg/da (kuru), 16&ndash;18&nbsp;kg/da (sulu)</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>20&ndash;25&nbsp;kg/da 20-20-0 veya 15-15-15</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Sapa kalkmadan önce 8&ndash;10&nbsp;kg/da üre veya 12&ndash;15&nbsp;kg/da amonyum nitrat</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Toprak 5&ndash;6&nbsp;°C'ye düştüğünde ekim yapılır. Anıza ekim, nemi koruyarak çıkışı hızlandırır.</p>
-          </article>
-
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Kışlık tahıl</p>
-              <h3>Arpa</h3>
-              <p class="crop-window">Ekim başı &ndash; Kasım başı</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>18&ndash;22&nbsp;kg/da (yemlik), 16&ndash;18&nbsp;kg/da (maltlık)</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>18&ndash;20&nbsp;kg/da 20-20-0</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Şubat sonu &ndash; mart başı 8&ndash;10&nbsp;kg/da amonyum sülfat veya nitrat</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Erken ekim kardeşlenmeyi artırır, yaz kuraklığına karşı verimi korur.</p>
-          </article>
-
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Yazlık alternatif</p>
-              <h3>Karabuğday</h3>
-              <p class="crop-window">Mayıs başı &ndash; Haziran ortası</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>Sıraya ekimde 4&ndash;5&nbsp;kg/da, serpmede 6&ndash;7&nbsp;kg/da</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>8&ndash;10&nbsp;kg/da 15-15-15</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Gerekmiyor; fazla azot yatmaya yol açar</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Don tehlikesi geçtikten sonra ekim yapın, toprak 10&nbsp;°C'nin üzerinde olmalı.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="climate" aria-labelledby="climateTitle">
-        <div class="section-intro">
-          <h2 id="climateTitle">Yağış takvimi ve tarlayı hazırlama</h2>
-          <p>Kış ve ilkbahar yağışlarını toprağa depolamak için toprak işlemesini sonbahar başında tamamlayın. Yaz sonuna doğru derin sürüm, kışlık tahıllar için nem tutumunu artırır.</p>
-        </div>
-        <div class="climate-layout">
-          <figure class="rainfall-chart" aria-label="Dinar aylık ortalama yağış grafiği">
-            <figcaption>Ortalama aylık yağış (mm)</figcaption>
-            <div id="rainfallBars" class="rainfall-bars"></div>
-          </figure>
-          <aside class="climate-notes">
-            <h3>İklime uygun yönetim</h3>
-            <ul>
-              <li>Kışlık tahıllar için anızlı veya minimum toprak işleme ile nem kaybını azalt.</li>
-              <li>Baklagilleri rotasyona ekleyerek toprağa azot kazandır, hastalık döngüsünü kır.</li>
-              <li>Geç don uyarılarını takip et; karabuğday gibi hassas türleri Mayıs ayından önce ekme.</li>
-              <li>Rüzgâr erozyonuna açık tarlalarda şeritvari ekim ve örtü bitkisi kullan.</li>
-            </ul>
+        <div class="map-layout">
+          <div id="faultMap" role="application" aria-label="Türkiye diri fay hatları haritası"></div>
+          <aside class="legend" aria-label="Fay hatları listesi">
+            <h3>Başlıca fay segmentleri</h3>
+            <ul id="faultList"></ul>
+            <p class="legend-note">Segmentler Maden Tetkik ve Arama Genel Müdürlüğü (MTA) diri fay haritasındaki ana hatlar baz alınarak şematik olarak gösterilmiştir.</p>
           </aside>
         </div>
       </section>
 
-      <section class="calendar" aria-labelledby="calendarTitle">
+      <section class="activity" aria-labelledby="activityTitle">
         <header class="section-intro">
-          <h2 id="calendarTitle">Canlı yağış takvimi</h2>
-          <p>Dinar koordinatları için Open-Meteo verileriyle 14 günlük yağış tahmini ve tarla işleri önerileri.</p>
-          <p id="calendarStatus" class="calendar-status" role="status" aria-live="polite">Meteoroloji verisi yükleniyor…</p>
+          <h2 id="activityTitle">24 saatlik hareketlilik özeti</h2>
+          <p>Depremler bölgelere göre gruplanarak olası etkilenme alanı ve yoğunluk düzeyi çıkarılır. Risk notu, son 24 saat içindeki sarsıntı sayısı ve büyüklüklerine göre hesaplanan gösterge değeridir.</p>
         </header>
-        <div id="calendarGrid" class="calendar-grid" aria-live="polite" aria-busy="true"></div>
-        <footer class="calendar-legend">
-          <p><span class="legend-dot legend-good"></span> Saha çalışmasına uygun &middot; <span class="legend-dot legend-caution"></span> Hafif yağış &ndash; hazırlık yap &middot; <span class="legend-dot legend-wet"></span> Yoğun yağış &ndash; tarlaya girme</p>
-          <p class="calendar-updated">Son güncelleme: <time id="calendarUpdated" datetime="">Bekleniyor</time></p>
-        </footer>
+        <div id="regionActivity" class="activity-grid" aria-live="polite"></div>
       </section>
 
-      <section class="rotation" aria-labelledby="rotationTitle">
+      <section class="events" aria-labelledby="eventsTitle">
         <header class="section-intro">
-          <h2 id="rotationTitle">3 yıllık örnek rotasyon</h2>
-          <p>Toprak yorgunluğunu önlemek ve yağıştan azami fayda sağlamak için aşağıdaki döngüyü deneyin.</p>
+          <h2 id="eventsTitle">Zaman çizelgesi</h2>
+          <p>Son 24 saatte kaydedilen depremler, en yeni olay en üstte olacak şekilde listelenir.</p>
         </header>
-        <ol class="rotation-steps">
-          <li>
-            <h3>1. yıl &ndash; Buğday veya arpa</h3>
-            <p>Sonbaharda ekim yaparak kış yağışlarını değerlendirin. Taban gübresini toprak analizine göre ayarlayın.</p>
-          </li>
-          <li>
-            <h3>2. yıl &ndash; Nohut veya mercimek</h3>
-            <p>Baklagiller toprağa azot kazandırır. Yaz kuraklığına dayanıklı çeşitler seçin.</p>
-          </li>
-          <li>
-            <h3>3. yıl &ndash; Karabuğday veya aspir</h3>
-            <p>Alternatif yazlık ürünler yabancı ot baskısını azaltır, toprağın dinlenmesini sağlar.</p>
-          </li>
-        </ol>
+        <div id="eventList" class="event-list" aria-live="polite"></div>
+      </section>
+
+      <section class="disclaimer" aria-labelledby="disclaimerTitle">
+        <h2 id="disclaimerTitle">Uyarı ve bilgiler</h2>
+        <ul>
+          <li>Veriler AFAD Deprem Dairesi Başkanlığı <a href="https://deprem.afad.gov.tr" target="_blank" rel="noopener">resmî API</a> üzerinden çekilir.</li>
+          <li>Risk skoru yalnızca gözlenen sarsıntı yoğunluğuna göre otomatik hesaplanır; mühendislik veya akademik bir değerlendirme yerine geçmez.</li>
+          <li>Haritadaki fay çizgileri şematik olup, detaylı saha çalışması ve yerel yönetmeliklerle doğrulanmalıdır.</li>
+        </ul>
       </section>
     </main>
-
-    <footer class="site-footer">
-      <p>Dinar Tarla Planlama Rehberi &middot; Göller Bölgesi çiftçileri için hazırlanmıştır.</p>
-    </footer>
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha512-o8Uiw4z3nuAZ8d5Xg1j8yUPbZQ+Q0jrISFRCGDpa2BkLomqKgJo0vvArkH5QWck/dwZ0pniS3pZWf0pAo0uhkQ==" crossorigin=""></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
