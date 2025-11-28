@@ -1,658 +1,658 @@
-const sceneListElement = document.getElementById('sceneList');
-const sceneTimelineElement = document.getElementById('sceneTimeline');
-const backgroundGridElement = document.getElementById('backgroundGrid');
-const characterLibraryElement = document.getElementById('characterLibrary');
-const stageCanvas = document.getElementById('stageCanvas');
-const actorControls = document.getElementById('actorControls');
-const sceneTitleInput = document.getElementById('sceneTitleInput');
-const sceneDurationInput = document.getElementById('sceneDurationInput');
-const sceneDurationLabel = document.getElementById('sceneDurationLabel');
-const dialogueForm = document.getElementById('dialogueForm');
-const dialogueCharacterSelect = document.getElementById('dialogueCharacterSelect');
-const dialogueToneSelect = document.getElementById('dialogueToneSelect');
-const dialogueText = document.getElementById('dialogueText');
-const dialogueListElement = document.getElementById('dialogueList');
-const addSceneButton = document.getElementById('addSceneBtn');
-const sceneCountLabel = document.getElementById('sceneCount');
-const storyboardStatusLabel = document.getElementById('storyboardStatus');
-const storyboardOutput = document.getElementById('storyboardOutput');
-const generateStoryboardButton = document.getElementById('generateStoryboard');
-const copyStoryboardButton = document.getElementById('copyStoryboard');
-
-const backgrounds = [
-  {
-    id: 'sunset-city',
-    name: 'Gün batımı şehri',
-    gradient: 'linear-gradient(140deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%)',
-    description: 'Modern şehir manzarası, gün batımı ışıkları.'
-  },
-  {
-    id: 'tech-lab',
-    name: 'Teknoloji laboratuvarı',
-    gradient: 'linear-gradient(140deg, #1f1c2c 0%, #928dab 100%)',
-    description: 'Holografik ekranlar ve neon ışıklar.'
-  },
-  {
-    id: 'studio-light',
-    name: 'Stüdyo ışıkları',
-    gradient: 'linear-gradient(140deg, #09203f 0%, #537895 100%)',
-    description: 'Talk-show hissi veren stüdyo ortamı.'
-  },
-  {
-    id: 'classroom',
-    name: 'Yaratıcı sınıf',
-    gradient: 'linear-gradient(140deg, #fbd3e9 0%, #bb377d 100%)',
-    description: 'Eğitim videoları için sıcak bir ortam.'
-  },
-  {
-    id: 'minimal-office',
-    name: 'Minimal ofis',
-    gradient: 'linear-gradient(140deg, #4568dc 0%, #b06ab3 100%)',
-    description: 'Kurumsal anlatımlar için sade bir ofis.'
-  },
-  {
-    id: 'green-garden',
-    name: 'Yeşil bahçe',
-    gradient: 'linear-gradient(140deg, #11998e 0%, #38ef7d 100%)',
-    description: 'Doğa temalı hikâyeler için ferah sahne.'
-  }
+const spots = [
+  { id: 'A1', name: 'A1', hardwareIndex: 1, reserved: false, side: 'north', mapPosition: 10 },
+  { id: 'A2', name: 'A2', hardwareIndex: 2, reserved: false, side: 'north', mapPosition: 24 },
+  { id: 'A3', name: 'A3', hardwareIndex: 3, reserved: true, reservedLabel: 'Ev Sahibi', side: 'north', mapPosition: 38 },
+  { id: 'B1', name: 'B1', hardwareIndex: 4, reserved: false, side: 'north', mapPosition: 52 },
+  { id: 'B2', name: 'B2', hardwareIndex: 5, reserved: true, reservedLabel: 'Engelli', side: 'south', mapPosition: 10 },
+  { id: 'B3', name: 'B3', hardwareIndex: 6, reserved: false, side: 'south', mapPosition: 24 },
+  { id: 'C1', name: 'C1', hardwareIndex: 7, reserved: true, reservedLabel: 'Dükkan', side: 'south', mapPosition: 38 },
+  { id: 'C2', name: 'C2', hardwareIndex: 8, reserved: false, side: 'south', mapPosition: 52 },
+  { id: 'D1', name: 'D1', hardwareIndex: 9, reserved: false, side: 'north', mapPosition: 66 },
+  { id: 'D2', name: 'D2', hardwareIndex: 10, reserved: false, side: 'south', mapPosition: 66 },
+  { id: 'E1', name: 'E1', hardwareIndex: 11, reserved: false, side: 'north', mapPosition: 80 },
+  { id: 'E2', name: 'E2', hardwareIndex: 12, reserved: false, side: 'south', mapPosition: 80 }
 ];
 
-const characterLibrary = [
-  { id: 'ayse', name: 'Ayşe', role: 'Sunucu', color: '#ff7b6e' },
-  { id: 'kaan', name: 'Kaan', role: 'Girişimci', color: '#6656ff' },
-  { id: 'lale', name: 'Lale', role: 'Öğretmen', color: '#2ab3ff' },
-  { id: 'burak', name: 'Burak', role: 'Öğrenci', color: '#f7b733' },
-  { id: 'nisa', name: 'Nisa', role: 'Yönetici', color: '#845ef7' },
-  { id: 'erol', name: 'Erol', role: 'Anlatıcı', color: '#20c997' }
-];
+const SPOT_STATES = {
+  AVAILABLE: 'available',
+  OCCUPIED: 'occupied',
+  WARNING: 'warning',
+  EXPIRED: 'expired',
+  RESERVED: 'reserved'
+};
 
-const expressions = [
-  { id: 'neutral', label: 'Nötr' },
-  { id: 'happy', label: 'Neşeli' },
-  { id: 'serious', label: 'Ciddi' },
-  { id: 'thinking', label: 'Düşünen' },
-  { id: 'surprised', label: 'Şaşkın' }
-];
+const DEFAULT_DURATION = 60; // seconds
+const WARNING_THRESHOLD = 10; // seconds
 
-const actions = [
-  { id: 'talking', label: 'Konuşma' },
-  { id: 'listening', label: 'Dinleme' },
-  { id: 'gesturing', label: 'Jest yapma' },
-  { id: 'walking', label: 'Yürüme' }
-];
+const spotGrid = document.getElementById('spotGrid');
+const streetMap = document.getElementById('streetMap');
+const availableCount = document.getElementById('availableCount');
+const occupiedCount = document.getElementById('occupiedCount');
+const expiredCount = document.getElementById('expiredCount');
+const timerList = document.getElementById('timerList');
+const notificationFeed = document.getElementById('notificationFeed');
+const connectBtn = document.getElementById('connectBtn');
+const startDemoBtn = document.getElementById('startDemoBtn');
+const connectionBadge = document.getElementById('connectionBadge');
+const portLabel = document.getElementById('portLabel');
+const connectionNote = document.getElementById('connectionNote');
 
-let scenes = [];
-let activeSceneId = null;
-let sceneCounter = 1;
-let storyboardDirty = true;
+const spotTemplate = document.getElementById('spotTemplate');
+const mapSpotTemplate = document.getElementById('mapSpotTemplate');
+const timerTemplate = document.getElementById('timerTemplate');
+const notificationTemplate = document.getElementById('notificationTemplate');
 
-function createSceneTemplate() {
-  const background = backgrounds[(sceneCounter - 1) % backgrounds.length];
-  const scene = {
-    id: `scene-${sceneCounter}`,
-    title: `Sahne ${sceneCounter}`,
-    duration: 8,
-    background: background.id,
-    characters: [],
-    dialogues: []
-  };
-  sceneCounter += 1;
-  return scene;
-}
+const spotStates = new Map();
+const timers = new Map();
+let demoIntervalId = null;
+let serialPort = null;
+let serialReader = null;
+let serialBuffer = '';
+let serialWriter = null;
+let connectionState = 'disconnected';
 
-function getActiveScene() {
-  return scenes.find((scene) => scene.id === activeSceneId) || null;
-}
+const serialTextEncoder = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
 
-function setActiveScene(sceneId) {
-  activeSceneId = sceneId;
-  const activeScene = getActiveScene();
-  if (!activeScene) {
-    return;
-  }
+const textDecoder = typeof TextDecoderStream !== 'undefined' ? new TextDecoderStream() : null;
 
-  sceneTitleInput.value = activeScene.title;
-  sceneDurationInput.value = String(activeScene.duration);
-  sceneDurationLabel.textContent = `${activeScene.duration} sn`;
+init();
 
-  renderSceneList();
-  renderTimeline();
-  renderBackgroundGrid();
-  renderCharacterLibrary();
-  renderStage();
-  renderActorControls();
-  renderDialogueList();
-  renderDialogueCharacterSelect();
-}
-
-function markStoryboardDirty() {
-  storyboardDirty = true;
-  storyboardStatusLabel.textContent = 'Güncel değil';
-}
-
-function addScene() {
-  const newScene = createSceneTemplate();
-  scenes.push(newScene);
-  updateSceneCount();
-  markStoryboardDirty();
-  setActiveScene(newScene.id);
-}
-
-function removeScene(sceneId) {
-  if (scenes.length === 1) {
-    return;
-  }
-  scenes = scenes.filter((scene) => scene.id !== sceneId);
-  if (activeSceneId === sceneId) {
-    activeSceneId = scenes[0]?.id || null;
-  }
-  updateSceneCount();
-  markStoryboardDirty();
-  setActiveScene(activeSceneId);
-}
-
-function renderSceneList() {
-  sceneListElement.innerHTML = '';
-
-  if (!scenes.length) {
-    const empty = document.createElement('p');
-    empty.className = 'panel-hint';
-    empty.textContent = 'Henüz sahne yok. "Yeni sahne" düğmesine tıklayın.';
-    sceneListElement.appendChild(empty);
-    return;
-  }
-
-  scenes.forEach((scene, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `scene-card${scene.id === activeSceneId ? ' active' : ''}`;
-    button.setAttribute('role', 'tab');
-    button.setAttribute('aria-selected', scene.id === activeSceneId);
-    button.innerHTML = `
-      <div>
-        <strong>${scene.title}</strong>
-        <span>${getBackgroundById(scene.background)?.name || 'Arka plan yok'} · ${scene.duration} sn</span>
-      </div>
-      <span>#${index + 1}</span>
-    `;
-    button.addEventListener('click', () => {
-      setActiveScene(scene.id);
-    });
-    button.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      removeScene(scene.id);
-    });
-
-    sceneListElement.appendChild(button);
+function init() {
+  spots.forEach((spot) => {
+    const state = spot.reserved ? SPOT_STATES.RESERVED : SPOT_STATES.AVAILABLE;
+    spotStates.set(spot.id, { state, warningIssued: false });
   });
-}
 
-function renderTimeline() {
-  sceneTimelineElement.innerHTML = '';
+  renderSpots();
+  updateCounters();
+  renderTimers();
+  setConnectionState('disconnected', 'Port seçilmedi');
 
-  scenes.forEach((scene, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `timeline-item${scene.id === activeSceneId ? ' active' : ''}`;
-    button.innerHTML = `<span>${scene.duration} sn</span> ${scene.title}`;
-    button.title = 'Seçmek için tıklayın, kaldırmak için sağ tıklayın';
-    button.addEventListener('click', () => {
-      setActiveScene(scene.id);
-    });
-    button.addEventListener('contextmenu', (event) => {
-      event.preventDefault();
-      removeScene(scene.id);
-    });
-
-    sceneTimelineElement.appendChild(button);
-
-    if (index < scenes.length - 1) {
-      const spacer = document.createElement('div');
-      spacer.className = 'timeline-spacer';
-      sceneTimelineElement.appendChild(spacer);
+  connectBtn?.addEventListener('click', () => {
+    if (connectionState === 'connected' || connectionState === 'connecting') {
+      disconnectSerial().catch((error) => {
+        console.error(error);
+        pushNotification('Bağlantı kapatılamadı', 'Seri port güvenli şekilde kapatılamadı.');
+      });
+    } else {
+      connectToArduino().catch((error) => {
+        console.error(error);
+        pushNotification('Bağlantı hatası', 'Arduino bağlantısı kurulamadı. Tarayıcınız Web Serial API destekliyor mu?');
+        setConnectionState('disconnected', 'Port seçilmedi');
+      });
     }
   });
+
+  startDemoBtn?.addEventListener('click', toggleDemoMode);
 }
 
-function renderBackgroundGrid() {
-  backgroundGridElement.innerHTML = '';
-  const activeScene = getActiveScene();
+function renderSpots() {
+  if (!spotTemplate) return;
+  spotGrid.innerHTML = '';
 
-  backgrounds.forEach((background) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = `background-card${activeScene?.background === background.id ? ' active' : ''}`;
-    card.style.background = background.gradient;
-    card.dataset.name = background.name;
-    card.title = background.description;
-    card.addEventListener('click', () => {
-      if (!activeScene) return;
-      activeScene.background = background.id;
-      renderBackgroundGrid();
-      renderStage();
-      markStoryboardDirty();
-    });
+  spots.forEach((spot) => {
+    const fragment = spotTemplate.content.cloneNode(true);
+    const card = fragment.querySelector('.spot-card');
+    const nameElement = fragment.querySelector('.spot-name');
+    const tagElement = fragment.querySelector('.spot-tag');
+    const statusElement = fragment.querySelector('.spot-status');
+    const toggleButton = fragment.querySelector('.toggle-btn');
+    const resetButton = fragment.querySelector('.reset-btn');
 
-    backgroundGridElement.appendChild(card);
-  });
-}
+    const status = spotStates.get(spot.id) ?? { state: spot.reserved ? SPOT_STATES.RESERVED : SPOT_STATES.AVAILABLE, warningIssued: false };
 
-function renderCharacterLibrary() {
-  characterLibraryElement.innerHTML = '';
-  const activeScene = getActiveScene();
+    nameElement.textContent = spot.name;
+    tagElement.textContent = spot.reserved ? (spot.reservedLabel ?? 'Rezerve') : 'Genel';
+    statusElement.textContent = getStatusMessage(spot, status.state);
 
-  characterLibrary.forEach((character) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'character-card';
-    card.title = `${character.name} · ${character.role}`;
-    card.innerHTML = `
-      <div class="character-avatar" style="background: ${character.color}">${character.name.charAt(0)}</div>
-      <strong>${character.name}</strong>
-      <p class="character-role">${character.role}</p>
-    `;
+    card.dataset.state = status.state;
+    card.dataset.reserved = String(spot.reserved);
+    card.setAttribute('aria-label', `${spot.name} kartı. ${getStatusMessage(spot, status.state)}`);
 
-    card.addEventListener('click', () => {
-      if (!activeScene) return;
-      const exists = activeScene.characters.some((actor) => actor.id === character.id);
-      if (!exists) {
-        activeScene.characters.push({
-          id: character.id,
-          name: character.name,
-          role: character.role,
-          color: character.color,
-          expression: 'neutral',
-          action: 'talking'
-        });
-        renderStage();
-        renderActorControls();
-        renderDialogueCharacterSelect();
-        markStoryboardDirty();
-      }
-    });
+    if (spot.reserved) {
+      toggleButton.disabled = true;
+      toggleButton.classList.add('is-disabled');
+      toggleButton.textContent = 'Rezerve';
+      resetButton.disabled = true;
+      resetButton.classList.add('is-disabled');
+    } else {
+      toggleButton.addEventListener('click', () => {
+        const currentState = spotStates.get(spot.id)?.state ?? SPOT_STATES.AVAILABLE;
+        const nextState = currentState === SPOT_STATES.AVAILABLE ? SPOT_STATES.OCCUPIED : SPOT_STATES.AVAILABLE;
+        applyStateChange(spot.id, nextState, { source: 'manual' });
+      });
 
-    const isActive = activeScene?.characters.some((actor) => actor.id === character.id);
-    card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    if (isActive) {
-      card.classList.add('active');
+      resetButton.addEventListener('click', () => {
+        applyStateChange(spot.id, SPOT_STATES.AVAILABLE, { source: 'manual', reset: true });
+      });
     }
 
-    characterLibraryElement.appendChild(card);
+    spotGrid.appendChild(fragment);
   });
+
+  renderStreetMap();
 }
 
-function renderStage() {
-  const activeScene = getActiveScene();
-  stageCanvas.innerHTML = '';
+function renderStreetMap() {
+  if (!streetMap || !mapSpotTemplate) return;
+  streetMap.innerHTML = '';
 
-  if (!activeScene) {
-    stageCanvas.innerHTML = '<p class="empty-stage">Önce bir sahne ekleyin.</p>';
-    return;
-  }
+  const centerLine = document.createElement('div');
+  centerLine.className = 'center-line';
+  centerLine.setAttribute('aria-hidden', 'true');
+  streetMap.appendChild(centerLine);
 
-  const background = getBackgroundById(activeScene.background);
-  if (background) {
-    stageCanvas.style.background = background.gradient;
-    stageCanvas.setAttribute('aria-label', `${activeScene.title} sahnesi, ${background.name} arka planı`);
-  } else {
-    stageCanvas.removeAttribute('style');
-  }
+  spots.forEach((spot) => {
+    const fragment = mapSpotTemplate.content.cloneNode(true);
+    const button = fragment.querySelector('.map-spot');
+    const label = fragment.querySelector('.map-spot-label');
+    const status = spotStates.get(spot.id)?.state ?? (spot.reserved ? SPOT_STATES.RESERVED : SPOT_STATES.AVAILABLE);
 
-  if (!activeScene.characters.length) {
-    stageCanvas.innerHTML = '<p class="empty-stage">Karakter ekleyin veya arka plan seçin. Sahne önizlemesi burada görünecek.</p>';
-    return;
-  }
+    button.dataset.state = status;
+    button.dataset.reserved = String(spot.reserved);
+    button.dataset.side = spot.side ?? 'north';
+    button.style.setProperty('--x', `${spot.mapPosition ?? 0}%`);
+    button.style.setProperty('--y', spot.side === 'south' ? '74%' : '26%');
+    button.setAttribute('aria-label', `${spot.name} alanı. ${getStatusMessage(spot, status)}`);
+    button.title = spot.reserved
+      ? `${spot.name} - ${spot.reservedLabel ?? 'Rezerve alan'}`
+      : `${spot.name} - Tıkla: durum değiştir, Sağ tık: sıfırla`;
 
-  activeScene.characters.forEach((actor) => {
-    const characterEl = document.createElement('div');
-    characterEl.className = 'stage-character';
+    label.textContent = spot.name;
 
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    avatar.style.background = `linear-gradient(135deg, ${actor.color}, rgba(255, 255, 255, 0.18))`;
-    avatar.textContent = actor.name.charAt(0);
+    if (spot.reserved) {
+      button.disabled = true;
+      button.classList.add('is-reserved');
+    } else {
+      button.addEventListener('click', () => {
+        const currentState = spotStates.get(spot.id)?.state ?? SPOT_STATES.AVAILABLE;
+        const nextState = currentState === SPOT_STATES.AVAILABLE ? SPOT_STATES.OCCUPIED : SPOT_STATES.AVAILABLE;
+        applyStateChange(spot.id, nextState, { source: 'map' });
+      });
 
-    const nameBadge = document.createElement('div');
-    nameBadge.className = 'badge';
-    nameBadge.textContent = `${actor.name} · ${getExpressionLabel(actor.expression)}`;
-
-    const actionBadge = document.createElement('span');
-    actionBadge.className = 'badge';
-    actionBadge.textContent = getActionLabel(actor.action);
-
-    characterEl.appendChild(avatar);
-    characterEl.appendChild(nameBadge);
-    characterEl.appendChild(actionBadge);
-    stageCanvas.appendChild(characterEl);
-  });
-}
-
-function renderActorControls() {
-  const activeScene = getActiveScene();
-  actorControls.innerHTML = '';
-
-  if (!activeScene) {
-    const info = document.createElement('p');
-    info.className = 'panel-hint';
-    info.textContent = 'Önce bir sahne seçin.';
-    actorControls.appendChild(info);
-    return;
-  }
-
-  if (!activeScene.characters.length) {
-    const hint = document.createElement('p');
-    hint.className = 'panel-hint';
-    hint.textContent = 'Bu sahnede henüz karakter yok. Soldaki kütüphaneden ekleyin.';
-    actorControls.appendChild(hint);
-    return;
-  }
-
-  activeScene.characters.forEach((actor) => {
-    const card = document.createElement('div');
-    card.className = 'actor-card';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'character-avatar';
-    avatar.style.background = actor.color;
-    avatar.textContent = actor.name.charAt(0);
-
-    const info = document.createElement('div');
-    const name = document.createElement('strong');
-    name.textContent = actor.name;
-    const meta = document.createElement('p');
-    meta.className = 'actor-meta';
-    meta.textContent = actor.role;
-
-    const actionsWrapper = document.createElement('div');
-    actionsWrapper.className = 'actor-actions';
-
-    const expressionSelect = document.createElement('select');
-    expressions.forEach((expression) => {
-      const option = document.createElement('option');
-      option.value = expression.id;
-      option.textContent = expression.label;
-      expressionSelect.appendChild(option);
-    });
-    expressionSelect.value = actor.expression;
-    expressionSelect.addEventListener('change', (event) => {
-      actor.expression = event.target.value;
-      renderStage();
-      renderDialogueList();
-      markStoryboardDirty();
-    });
-
-    const actionSelect = document.createElement('select');
-    actions.forEach((action) => {
-      const option = document.createElement('option');
-      option.value = action.id;
-      option.textContent = action.label;
-      actionSelect.appendChild(option);
-    });
-    actionSelect.value = actor.action;
-    actionSelect.addEventListener('change', (event) => {
-      actor.action = event.target.value;
-      renderStage();
-      markStoryboardDirty();
-    });
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'Karakteri kaldır';
-    removeButton.addEventListener('click', () => {
-      removeActorFromScene(actor.id);
-    });
-
-    actionsWrapper.appendChild(expressionSelect);
-    actionsWrapper.appendChild(actionSelect);
-    actionsWrapper.appendChild(removeButton);
-
-    info.appendChild(name);
-    info.appendChild(meta);
-    info.appendChild(actionsWrapper);
-
-    card.appendChild(avatar);
-    card.appendChild(info);
-    actorControls.appendChild(card);
-  });
-}
-
-function removeActorFromScene(actorId) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-
-  activeScene.characters = activeScene.characters.filter((actor) => actor.id !== actorId);
-  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.characterId !== actorId);
-
-  renderStage();
-  renderActorControls();
-  renderCharacterLibrary();
-  renderDialogueList();
-  renderDialogueCharacterSelect();
-  markStoryboardDirty();
-}
-
-function renderDialogueCharacterSelect() {
-  const activeScene = getActiveScene();
-  dialogueCharacterSelect.innerHTML = '';
-
-  const narratorOption = document.createElement('option');
-  narratorOption.value = 'narrator';
-  narratorOption.textContent = 'Anlatıcı';
-  dialogueCharacterSelect.appendChild(narratorOption);
-
-  if (!activeScene) {
-    return;
-  }
-
-  activeScene.characters.forEach((actor) => {
-    const option = document.createElement('option');
-    option.value = actor.id;
-    option.textContent = actor.name;
-    dialogueCharacterSelect.appendChild(option);
-  });
-}
-
-function renderDialogueList() {
-  const activeScene = getActiveScene();
-  dialogueListElement.innerHTML = '';
-
-  if (!activeScene || !activeScene.dialogues.length) {
-    const empty = document.createElement('p');
-    empty.className = 'panel-hint';
-    empty.textContent = 'Bu sahne için henüz replik yazılmadı.';
-    dialogueListElement.appendChild(empty);
-    return;
-  }
-
-  activeScene.dialogues.forEach((dialogue, index) => {
-    const card = document.createElement('div');
-    card.className = 'dialogue-card';
-
-    const header = document.createElement('div');
-    header.className = 'dialogue-header';
-    const speaker = document.createElement('strong');
-    speaker.textContent = `${index + 1}. ${dialogue.characterName}`;
-    const tone = document.createElement('span');
-    tone.className = 'dialogue-tone';
-    tone.textContent = dialogue.tone;
-
-    header.appendChild(speaker);
-    const actor = dialogue.characterId === 'narrator'
-      ? null
-      : activeScene.characters.find((item) => item.id === dialogue.characterId);
-    if (actor) {
-      const expression = document.createElement('span');
-      expression.className = 'dialogue-meta';
-      expression.textContent = getExpressionLabel(actor.expression);
-      header.appendChild(expression);
+      button.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        applyStateChange(spot.id, SPOT_STATES.AVAILABLE, { source: 'map', reset: true });
+      });
     }
-    header.appendChild(tone);
 
-    const text = document.createElement('p');
-    text.className = 'dialogue-text';
-    text.textContent = dialogue.text;
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'Repliği sil';
-    removeButton.addEventListener('click', () => {
-      deleteDialogue(dialogue.id);
-    });
-
-    card.appendChild(header);
-    card.appendChild(text);
-    card.appendChild(removeButton);
-
-    dialogueListElement.appendChild(card);
+    streetMap.appendChild(fragment);
   });
 }
 
-function deleteDialogue(dialogueId) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-
-  activeScene.dialogues = activeScene.dialogues.filter((dialogue) => dialogue.id !== dialogueId);
-  renderDialogueList();
-  markStoryboardDirty();
+function getStatusMessage(spot, state) {
+  switch (state) {
+    case SPOT_STATES.AVAILABLE:
+      return 'Alan müsait. Yeşil LED yanar.';
+    case SPOT_STATES.OCCUPIED:
+      return 'Araç park etti. LED kırmızıya döndü ve sayaç başladı (1 dk).';
+    case SPOT_STATES.WARNING:
+      return 'Son 10 saniye! Aracınızı çekin, aksi halde ceza uygulanacak.';
+    case SPOT_STATES.EXPIRED:
+      return 'Süre doldu. Ceza kaydedildi, alan kırmızı yanmaya devam ediyor.';
+    case SPOT_STATES.RESERVED:
+      return `${spot.reservedLabel ?? 'Rezerve alan'}. Sürekli kırmızı yanar.`;
+    default:
+      return 'Durum bilinmiyor.';
+  }
 }
 
-function handleDialogueSubmit(event) {
-  event.preventDefault();
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
+function updateCounters() {
+  let available = 0;
+  let occupied = 0;
+  let expired = 0;
 
-  const text = dialogueText.value.trim();
-  if (!text) {
-    dialogueText.focus();
-    return;
-  }
-
-  const characterId = dialogueCharacterSelect.value;
-  const tone = dialogueToneSelect.value;
-  const dialogueId = `dlg-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
-
-  let characterName = 'Anlatıcı';
-  if (characterId !== 'narrator') {
-    const actor = activeScene.characters.find((item) => item.id === characterId);
-    characterName = actor ? actor.name : 'Karakter';
-  }
-
-  activeScene.dialogues.push({
-    id: dialogueId,
-    characterId,
-    characterName,
-    tone,
-    text
+  spots.forEach((spot) => {
+    const status = spotStates.get(spot.id);
+    if (!status) return;
+    switch (status.state) {
+      case SPOT_STATES.AVAILABLE:
+        available += 1;
+        break;
+      case SPOT_STATES.OCCUPIED:
+      case SPOT_STATES.WARNING:
+        occupied += 1;
+        break;
+      case SPOT_STATES.EXPIRED:
+        expired += 1;
+        break;
+      default:
+        break;
+    }
   });
 
-  dialogueText.value = '';
-  renderDialogueList();
-  markStoryboardDirty();
+  availableCount.textContent = available.toString();
+  occupiedCount.textContent = occupied.toString();
+  expiredCount.textContent = expired.toString();
 }
 
-function getBackgroundById(id) {
-  return backgrounds.find((background) => background.id === id) || null;
-}
+function setConnectionState(state, label = '') {
+  connectionState = state;
 
-function getExpressionLabel(expressionId) {
-  return expressions.find((expression) => expression.id === expressionId)?.label || 'Nötr';
-}
-
-function getActionLabel(actionId) {
-  return actions.find((action) => action.id === actionId)?.label || 'Konuşma';
-}
-
-function updateSceneCount() {
-  sceneCountLabel.textContent = scenes.length.toString();
-}
-
-function generateStoryboard() {
-  if (!scenes.length) {
-    storyboardOutput.textContent = 'Storyboard oluşturmak için en az bir sahne ekleyin.';
-    storyboardStatusLabel.textContent = 'Hazır değil';
-    storyboardDirty = true;
-    return;
+  if (connectionBadge) {
+    connectionBadge.textContent =
+      state === 'connected' ? 'Bağlı' : state === 'connecting' ? 'Bağlanılıyor…' : 'Bağlı değil';
+    connectionBadge.className = `status-pill status-${state}`;
   }
 
-  const blocks = scenes.map((scene, index) => {
-    const background = getBackgroundById(scene.background);
-    const characterSummary = scene.characters.length
-      ? scene.characters.map((actor) => `${actor.name} (${getExpressionLabel(actor.expression)}, ${getActionLabel(actor.action)})`).join(', ')
-      : 'Karakter eklenmedi';
-
-    const dialogueSummary = scene.dialogues.length
-      ? scene.dialogues.map((dialogue) => `  - ${dialogue.characterName} [${dialogue.tone}]: ${dialogue.text}`).join('\n')
-      : '  - Replik eklenmedi';
-
-    return `Sahne ${index + 1}: ${scene.title}\nSüre: ${scene.duration} sn | Arka plan: ${background?.name || 'Belirlenmedi'}\nKarakterler: ${characterSummary}\nDiyaloglar:\n${dialogueSummary}`;
-  });
-
-  storyboardOutput.textContent = blocks.join('\n\n');
-  storyboardStatusLabel.textContent = 'Güncel';
-  storyboardDirty = false;
-}
-
-async function copyStoryboardToClipboard() {
-  const content = storyboardOutput.textContent.trim();
-  if (!content) {
-    storyboardStatusLabel.textContent = 'Kopyalanacak içerik yok';
-    return;
+  if (portLabel) {
+    portLabel.textContent = label || (state === 'connected' ? 'Port hazır' : 'Port seçilmedi');
   }
 
-  if (!navigator.clipboard) {
-    storyboardStatusLabel.textContent = 'Tarayıcı panoya yazmayı desteklemiyor';
-    return;
+  if (connectionNote) {
+    if (state === 'connected') {
+      connectionNote.innerHTML =
+        'Bağlı. Arduino her satırda <code>{"spot":1,"state":"occupied"}</code> JSON formatı göndermelidir.';
+    } else {
+      connectionNote.innerHTML =
+        'Gerçek kullanımda Arduino, park alanlarının durumunu JSON satırlarıyla göndermelidir. <code>{"spot":1,"state":"occupied"}</code>';
+    }
+  }
+
+  if (connectBtn) {
+    connectBtn.textContent = state === 'connected' || state === 'connecting' ? 'Bağlantıyı kes' : "Arduino'ya bağlan";
+    connectBtn.disabled = state === 'connecting';
+  }
+}
+
+function describePort(port) {
+  if (!port?.getInfo) return 'Port hazır';
+  const info = port.getInfo();
+  const vid = info.usbVendorId ? info.usbVendorId.toString(16).padStart(4, '0') : null;
+  const pid = info.usbProductId ? info.usbProductId.toString(16).padStart(4, '0') : null;
+  return vid && pid ? `USB 0x${vid}/0x${pid}` : 'Port hazır';
+}
+
+async function writeSerial(payload) {
+  if (!serialPort?.writable || !serialTextEncoder) return;
+  if (!serialWriter) {
+    serialWriter = serialPort.writable.getWriter();
   }
 
   try {
-    await navigator.clipboard.writeText(content);
-    storyboardStatusLabel.textContent = 'Panoya kopyalandı';
-    if (!storyboardDirty) {
-      setTimeout(() => {
-        storyboardStatusLabel.textContent = 'Güncel';
-      }, 1800);
-    }
+    await serialWriter.write(serialTextEncoder.encode(payload));
   } catch (error) {
-    storyboardStatusLabel.textContent = 'Kopyalama başarısız';
+    console.error('Serial write error', error);
+    pushNotification('Yazma hatası', 'Arduinoya veri gönderilirken sorun oluştu.');
+    setConnectionState('disconnected', 'Port seçilmedi');
   }
 }
 
-function handleTitleChange(event) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-  activeScene.title = event.target.value || 'Adsız sahne';
-  renderSceneList();
-  renderTimeline();
-  markStoryboardDirty();
+function sendHandshake() {
+  writeSerial(`${JSON.stringify({ client: 'dashboard', version: '1.0', spots: spots.length })}\n`);
 }
 
-function handleDurationChange(event) {
-  const activeScene = getActiveScene();
-  if (!activeScene) return;
-  const value = Number.parseInt(event.target.value, 10);
-  activeScene.duration = value;
-  sceneDurationLabel.textContent = `${value} sn`;
-  renderSceneList();
-  renderTimeline();
-  markStoryboardDirty();
+function applyStateChange(spotId, newState, options = {}) {
+  const spot = spots.find((item) => item.id === spotId);
+  if (!spot) return;
+  const current = spotStates.get(spotId) ?? { state: SPOT_STATES.AVAILABLE, warningIssued: false };
+
+  if (spot.reserved) {
+    spotStates.set(spotId, { state: SPOT_STATES.RESERVED, warningIssued: false });
+    renderSpots();
+    updateCounters();
+    return;
+  }
+
+  const nextState = newState;
+  const updated = { state: nextState, warningIssued: current.warningIssued };
+
+  if (nextState === SPOT_STATES.OCCUPIED) {
+    updated.warningIssued = false;
+    startTimer(spotId, options.source ?? 'sensor');
+  }
+
+  if (nextState === SPOT_STATES.AVAILABLE) {
+    stopTimer(spotId, { reset: options.reset });
+    updated.warningIssued = false;
+  }
+
+  if (nextState === SPOT_STATES.EXPIRED) {
+    stopTimer(spotId, { keepExpired: true });
+  }
+
+  if (nextState === SPOT_STATES.WARNING) {
+    updated.warningIssued = true;
+  }
+
+  spotStates.set(spotId, updated);
+  renderSpots();
+  updateCounters();
+  syncStateToArduino(spot, nextState);
 }
 
-function initialise() {
-  addSceneButton.addEventListener('click', addScene);
-  sceneTitleInput.addEventListener('input', handleTitleChange);
-  sceneDurationInput.addEventListener('input', handleDurationChange);
-  dialogueForm.addEventListener('submit', handleDialogueSubmit);
-  generateStoryboardButton.addEventListener('click', generateStoryboard);
-  copyStoryboardButton.addEventListener('click', copyStoryboardToClipboard);
+function syncStateToArduino(spot, state) {
+  if (!spot || spot.reserved || connectionState !== 'connected') return;
 
-  addScene();
-  renderBackgroundGrid();
-  renderCharacterLibrary();
-  renderDialogueCharacterSelect();
-  updateSceneCount();
+  const outboundState = state === SPOT_STATES.WARNING ? 'warning' : state;
+  const payload = JSON.stringify({ spot: spot.hardwareIndex ?? spot.id, state: outboundState });
+  writeSerial(`${payload}\n`);
 }
 
-initialise();
+function startTimer(spotId, source = 'sensor') {
+  const active = timers.get(spotId);
+  if (active?.interval) {
+    clearInterval(active.interval);
+  }
+  timers.delete(spotId);
+
+  const timer = {
+    remaining: DEFAULT_DURATION,
+    warningIssued: false,
+    expired: false,
+    source,
+    interval: null
+  };
+
+  timer.interval = setInterval(() => {
+    timer.remaining -= 1;
+    if (timer.remaining <= WARNING_THRESHOLD && !timer.warningIssued && timer.remaining > 0) {
+      timer.warningIssued = true;
+      applyStateChange(spotId, SPOT_STATES.WARNING);
+      pushNotification('Son 10 saniye uyarısı', `Park noktası ${spotId}: Aracınızı çekin yoksa park cezası uygulanacak.`);
+      requestBrowserNotification(`Park noktası ${spotId}`, 'Aracınızı çekin yoksa park cezası alacaksınız! Son 10 saniye.');
+    }
+
+    if (timer.remaining <= 0) {
+      clearInterval(timer.interval);
+      timer.remaining = 0;
+      timer.expired = true;
+      applyStateChange(spotId, SPOT_STATES.EXPIRED);
+      pushNotification('Süre doldu', `Park noktası ${spotId} için ceza kaydedildi.`);
+      requestBrowserNotification(`Park noktası ${spotId}`, 'Süre doldu. Park cezası uygulandı.');
+    }
+
+    renderTimers();
+  }, 1000);
+
+  timers.set(spotId, timer);
+  renderTimers();
+}
+
+function stopTimer(spotId, options = {}) {
+  const timer = timers.get(spotId);
+  if (!timer) return;
+
+  if (timer.interval) {
+    clearInterval(timer.interval);
+  }
+
+  if (options.keepExpired && timer.expired) {
+    timer.interval = null;
+    timers.set(spotId, timer);
+  } else {
+    timers.delete(spotId);
+  }
+
+  if (options.reset) {
+    pushNotification('Alan sıfırlandı', `Park noktası ${spotId} tekrar kullanılabilir durumda.`);
+  }
+
+  renderTimers();
+}
+
+function renderTimers() {
+  if (!timerTemplate) return;
+  timerList.innerHTML = '';
+
+  timers.forEach((timer, spotId) => {
+    const spot = spots.find((item) => item.id === spotId);
+    if (!spot) return;
+
+    const fragment = timerTemplate.content.cloneNode(true);
+    const card = fragment.querySelector('.timer-card');
+    const title = fragment.querySelector('h3');
+    const timeLabel = fragment.querySelector('.time-remaining');
+    const statusText = fragment.querySelector('.timer-status');
+    const stopButton = fragment.querySelector('.stop-btn');
+
+    title.textContent = `Alan ${spot.name}`;
+    timeLabel.textContent = formatTime(timer.remaining);
+
+    card.dataset.warning = String(timer.warningIssued);
+    card.dataset.expired = String(timer.expired);
+
+    if (timer.expired) {
+      statusText.textContent = 'Süre doldu. Alan manuel onay bekliyor.';
+    } else if (timer.warningIssued) {
+      statusText.textContent = 'Son 10 saniye! Sürücüye bildirim gönderildi.';
+    } else {
+      statusText.textContent = 'Araç park halinde. Süre dolmadan çıkış yapılmalı.';
+    }
+
+    stopButton.addEventListener('click', () => {
+      stopTimer(spotId);
+      applyStateChange(spotId, SPOT_STATES.AVAILABLE, { reset: true });
+    });
+
+    timerList.appendChild(fragment);
+  });
+}
+
+function formatTime(seconds) {
+  const safeSeconds = Math.max(0, seconds);
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function pushNotification(title, message) {
+  if (!notificationTemplate) return;
+  const fragment = notificationTemplate.content.cloneNode(true);
+  const titleElement = fragment.querySelector('.notification-title');
+  const messageElement = fragment.querySelector('.notification-message');
+  const timeElement = fragment.querySelector('.notification-time');
+
+  titleElement.textContent = title;
+  messageElement.textContent = message;
+  const now = new Date();
+  timeElement.dateTime = now.toISOString();
+  timeElement.textContent = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  notificationFeed.prepend(fragment);
+
+  while (notificationFeed.children.length > 8) {
+    notificationFeed.removeChild(notificationFeed.lastElementChild);
+  }
+}
+
+async function connectToArduino() {
+  if (!('serial' in navigator)) {
+    pushNotification('Desteklenmeyen tarayıcı', 'Web Serial API sadece Chrome, Edge gibi tarayıcılarda çalışır.');
+    throw new Error('Serial API not available');
+  }
+
+  if (serialPort) {
+    await disconnectSerial();
+  }
+
+  setConnectionState('connecting', 'Port bekleniyor');
+  serialPort = await navigator.serial.requestPort();
+  await serialPort.open({ baudRate: 9600 });
+
+  setConnectionState('connected', describePort(serialPort));
+  pushNotification('Bağlandı', 'Arduino cihazı ile seri bağlantı kuruldu.');
+  sendHandshake();
+
+  if (textDecoder && serialPort.readable) {
+    const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+    serialReader = textDecoder.readable.getReader();
+    readSerialLoop(readableStreamClosed).catch((error) => {
+      console.error('Serial read error', error);
+      pushNotification('Veri akışı durdu', 'Seri bağlantıdan veri okunamadı.');
+      setConnectionState('disconnected', 'Port seçilmedi');
+    });
+  } else if (serialPort.readable) {
+    serialReader = serialPort.readable.getReader();
+    readLegacySerialLoop().catch((error) => {
+      console.error('Serial read error', error);
+      pushNotification('Veri akışı durdu', 'Seri bağlantıdan veri okunamadı.');
+      setConnectionState('disconnected', 'Port seçilmedi');
+    });
+  }
+}
+
+async function disconnectSerial() {
+  if (serialReader) {
+    await serialReader.cancel();
+    serialReader = null;
+  }
+  if (serialWriter) {
+    try {
+      await serialWriter.close?.();
+    } catch (error) {
+      console.warn('Serial writer close failed', error);
+    }
+    serialWriter.releaseLock?.();
+    serialWriter = null;
+  }
+  if (serialPort) {
+    await serialPort.close();
+    serialPort = null;
+  }
+
+  setConnectionState('disconnected', 'Port seçilmedi');
+}
+
+async function readSerialLoop(readableStreamClosedPromise) {
+  try {
+    while (true) {
+      const { value, done } = await serialReader.read();
+      if (done) break;
+      if (value) {
+        handleSerialData(value);
+      }
+    }
+  } finally {
+    serialReader?.releaseLock();
+    await readableStreamClosedPromise.catch(() => {});
+    if (connectionState === 'connected') {
+      setConnectionState('disconnected', 'Veri akışı durdu');
+    }
+  }
+}
+
+async function readLegacySerialLoop() {
+  try {
+    while (true) {
+      const { value, done } = await serialReader.read();
+      if (done) break;
+      if (value && value.length) {
+        const chunk = new TextDecoder().decode(value);
+        handleSerialData(chunk);
+      }
+    }
+  } finally {
+    serialReader?.releaseLock();
+    if (connectionState === 'connected') {
+      setConnectionState('disconnected', 'Veri akışı durdu');
+    }
+  }
+}
+
+function handleSerialData(chunk) {
+  serialBuffer += chunk;
+  let newlineIndex = serialBuffer.indexOf('\n');
+  while (newlineIndex >= 0) {
+    const line = serialBuffer.slice(0, newlineIndex).trim();
+    serialBuffer = serialBuffer.slice(newlineIndex + 1);
+    if (line) {
+      processSerialLine(line);
+    }
+    newlineIndex = serialBuffer.indexOf('\n');
+  }
+}
+
+function processSerialLine(line) {
+  try {
+    const payload = JSON.parse(line);
+    const spotId = resolveSpotId(payload);
+    if (!spotId) {
+      pushNotification('Bilinmeyen sensör', `Veri eşleştirilemedi: ${line}`);
+      return;
+    }
+
+    if (payload.state === 'occupied') {
+      applyStateChange(spotId, SPOT_STATES.OCCUPIED, { source: 'sensor' });
+    } else if (payload.state === 'available') {
+      applyStateChange(spotId, SPOT_STATES.AVAILABLE, { source: 'sensor' });
+    } else if (payload.state === 'reset') {
+      applyStateChange(spotId, SPOT_STATES.AVAILABLE, { source: 'sensor', reset: true });
+    } else {
+      pushNotification('Bilinmeyen durum', `Sensörden gelen durum anlaşılamadı: ${payload.state}`);
+    }
+  } catch (error) {
+    console.error('JSON parse error', error, line);
+    pushNotification('Seri veri hatası', `Okunan satır çözümlenemedi: ${line}`);
+  }
+}
+
+function resolveSpotId(payload) {
+  if (payload.spotId) {
+    return String(payload.spotId).toUpperCase();
+  }
+
+  if (typeof payload.spot === 'number') {
+    const byIndex = spots.find((spot) => spot.hardwareIndex === payload.spot);
+    if (byIndex) {
+      return byIndex.id;
+    }
+  }
+
+  if (payload.pin) {
+    const byPin = spots.find((spot) => spot.hardwareIndex === Number(payload.pin));
+    if (byPin) {
+      return byPin.id;
+    }
+  }
+
+  return null;
+}
+
+function toggleDemoMode() {
+  if (demoIntervalId) {
+    clearInterval(demoIntervalId);
+    demoIntervalId = null;
+    startDemoBtn.textContent = 'Demo modunu başlat';
+    pushNotification('Demo durduruldu', 'Sensör simülasyonu kapatıldı.');
+    return;
+  }
+
+  pushNotification('Demo modu aktif', 'Her 8 saniyede rastgele sensör olayları tetiklenecek.');
+  startDemoBtn.textContent = 'Demo modunu durdur';
+
+  demoIntervalId = setInterval(() => {
+    const publicSpots = spots.filter((spot) => !spot.reserved);
+    const spot = publicSpots[Math.floor(Math.random() * publicSpots.length)];
+    const status = spotStates.get(spot.id)?.state ?? SPOT_STATES.AVAILABLE;
+
+    if (status === SPOT_STATES.AVAILABLE) {
+      applyStateChange(spot.id, SPOT_STATES.OCCUPIED, { source: 'demo' });
+    } else {
+      applyStateChange(spot.id, SPOT_STATES.AVAILABLE, { source: 'demo', reset: true });
+    }
+  }, 8000);
+}
+
+function requestBrowserNotification(title, message) {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body: message });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification(title, { body: message });
+      }
+    });
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  if (demoIntervalId) {
+    clearInterval(demoIntervalId);
+  }
+  if (serialPort) {
+    disconnectSerial().catch(() => {});
+  }
+});
