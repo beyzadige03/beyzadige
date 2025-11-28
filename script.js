@@ -1,311 +1,170 @@
-const rainfallScenarios = [
-  {
-    range: [0, 349],
-    title: 'Şiddetli kurak yıl',
-    description:
-      'Yağışın 350 mm altına düştüğü yıllarda nadaslı veya anıza ekim yaparak toprağın nemini koru. Nohut, mercimek ve korunga gibi kuraklığa dayanıklı türler ön plana çıkar.',
-    crops: [
-      {
-        name: 'Nohut',
-        sowing: 'Mart sonu &ndash; Nisan başı',
-        seed: '10&ndash;12 kg/da',
-        fertilizer: '6&ndash;8 kg/da DAP (18-46-0)',
-        tip: 'Sertifikalı nohut çeşitleri kısa sürede çiçeklenir ve yaz sıcaklarına yakalanmaz.'
-      },
-      {
-        name: 'Mercimek',
-        sowing: 'Şubat sonu &ndash; Mart ortası',
-        seed: '8&ndash;10 kg/da',
-        fertilizer: '5&ndash;6 kg/da DAP',
-        tip: 'Yabancı ot baskısını azaltmak için ekim öncesi yüzlek sürüm yap.'
-      },
-      {
-        name: 'Korunga / Aspir',
-        sowing: 'Mart ortası',
-        seed: 'Korunga 4&ndash;5 kg/da, aspir 3&ndash;4 kg/da',
-        fertilizer: '5&ndash;6 kg/da 20-20-0',
-        tip: 'Yem amaçlı korunga, kurak meralara dayanır; aspir yağ bitkisi olarak pazarlanabilir.'
-      }
-    ]
-  },
-  {
-    range: [350, 449],
-    title: 'Orta kurak yıl',
-    description:
-      '350&ndash;450 mm arası yağışta erken ekim ve toprak nemini tutacak işleme yöntemleri kritik. Arpa ve makarnalık buğday kurak stresine daha dayanıklıdır.',
-    crops: [
-      {
-        name: 'Makarnalık buğday',
-        sowing: 'Ekim ortası &ndash; Kasım ortası',
-        seed: '18&ndash;20 kg/da',
-        fertilizer: '20&ndash;25 kg/da 20-20-0 + sapa kalkmada 8 kg/da üre',
-        tip: 'Erken ekim kardeşlenmeyi artırır ve başaklanma dönemine güçlü girer.'
-      },
-      {
-        name: 'Arpa',
-        sowing: 'Ekim başı &ndash; Kasım başı',
-        seed: '18&ndash;22 kg/da',
-        fertilizer: '18&ndash;20 kg/da 20-20-0 + ilkbaharda 8 kg/da amonyum sülfat',
-        tip: 'Maltlık çeşitlerde sık ekimden kaçın, hava sirkülasyonunu koru.'
-      },
-      {
-        name: 'Fiğ (yem)',
-        sowing: 'Ekim sonu &ndash; Kasım',
-        seed: '12&ndash;14 kg/da',
-        fertilizer: '6&ndash;8 kg/da 20-20-0',
-        tip: 'Arpa ile karışık ekerek yem kalitesini artırabilir, erken biçimle ot verimini yükseltebilirsin.'
-      }
-    ]
-  },
-  {
-    range: [450, 550],
-    title: 'Orta nemli yıl',
-    description:
-      '450&ndash;550 mm aralığında kış yağışları kuvvetlidir. Ekmeklik buğday ve yulaf verimi yükselir, sulu alanlarda yağ bitkileri değerlendirilebilir.',
-    crops: [
-      {
-        name: 'Ekmeklik buğday',
-        sowing: '15 Ekim &ndash; 15 Kasım',
-        seed: '18&ndash;20 kg/da (kuru), 16&ndash;18 kg/da (sulu)',
-        fertilizer: '20&ndash;25 kg/da 20-20-0 + sapa kalkmadan önce 8&ndash;10 kg/da üre',
-        tip: 'Anızlı ekim nemi korur, üst gübreyi kardeşlenme bitmeden uygula.'
-      },
-      {
-        name: 'Yulaf',
-        sowing: 'Ekim sonu &ndash; Kasım',
-        seed: '16&ndash;18 kg/da',
-        fertilizer: '18&ndash;20 kg/da 20-20-0 + ilkbaharda 6 kg/da amonyum nitrat',
-        tip: 'Yulaf samanı yağışlı yıllarda yüksek biyokütle verir, kaba yem açığını kapatır.'
-      },
-      {
-        name: 'Yem bezelyesi',
-        sowing: 'Ekim &ndash; Kasım',
-        seed: '14&ndash;16 kg/da',
-        fertilizer: '6&ndash;8 kg/da 20-20-0',
-        tip: 'Fiğ ile karışık ekim, protein oranını yükseltir ve otlatmaya uygun karışım oluşturur.'
-      }
-    ]
-  },
-  {
-    range: [551, Infinity],
-    title: 'Nispeten yağışlı yıl',
-    description:
-      'Yağışın 550 mm üzerine çıktığı yüksek rakımlı veya sulu parsellerde mısır, çavdar ve üçgül gibi nem seven türleri değerlendirebilirsin.',
-    crops: [
-      {
-        name: 'Silajlık mısır (sulu)',
-        sowing: 'Nisan sonu &ndash; Mayıs',
-        seed: '4.5&ndash;5 kg/da (hibrit)',
-        fertilizer: 'Tabanda 20 kg/da 20-20-0 + üstte 12 kg/da üre',
-        tip: 'Çıkış sonrası çapalama ile havalanmayı artır, su yönetimini hassas yap.'
-      },
-      {
-        name: 'Çavdar',
-        sowing: 'Ekim ortası &ndash; Kasım',
-        seed: '16&ndash;18 kg/da',
-        fertilizer: '16&ndash;18 kg/da 20-20-0 + erken ilkbaharda 8 kg/da amonyum nitrat',
-        tip: 'Dona dayanıklıdır; hasat sonrası sapı toprak örtüsü olarak bırakılabilir.'
-      },
-      {
-        name: 'Üçgül veya patates (sulu)',
-        sowing: 'Üçgül: Mart, Patates: Nisan başı',
-        seed: 'Üçgül 1.5&ndash;2 kg/da, Patates 2500&ndash;3000 kg/ha',
-        fertilizer: 'Organik maddece zengin tarlalarda 15-15-15 ile destekle',
-        tip: 'Üçgül uzun süreli kaba yem sağlar; patates için mutlaka sulama planı oluştur.'
-      }
-    ]
-  }
-];
+const RESERVED_IDS = [1, 2, 3];
+const PARK_DURATION_MS = 5 * 60 * 1000; // 5 dakika
+const NOTIFY_MS = 4 * 60 * 1000; // 1 dakika kala bildirim
 
-const monthlyRainfall = [
-  { month: 'Oca', amount: 65 },
-  { month: 'Şub', amount: 58 },
-  { month: 'Mar', amount: 55 },
-  { month: 'Nis', amount: 48 },
-  { month: 'May', amount: 38 },
-  { month: 'Haz', amount: 24 },
-  { month: 'Tem', amount: 12 },
-  { month: 'Ağu', amount: 10 },
-  { month: 'Eyl', amount: 18 },
-  { month: 'Eki', amount: 36 },
-  { month: 'Kas', amount: 52 },
-  { month: 'Ara', amount: 64 }
-];
+const slotGrid = document.getElementById('slotGrid');
+const slotSelect = document.getElementById('slotSelect');
+const enterButton = document.getElementById('enterButton');
+const exitButton = document.getElementById('exitButton');
+const notificationList = document.getElementById('notificationList');
+const metricFree = document.getElementById('metricFree');
+const metricNotifications = document.getElementById('metricNotifications');
+const metricTotal = document.getElementById('metricTotal');
 
-const rainfallInput = document.querySelector('#rainfallInput');
-const rainfallValue = document.querySelector('#rainfallValue');
-const scenarioTitle = document.querySelector('#scenarioTitle');
-const scenarioDescription = document.querySelector('#scenarioDescription');
-const recommendedCrops = document.querySelector('#recommendedCrops');
-const rainfallBars = document.querySelector('#rainfallBars');
-const calendarGrid = document.querySelector('#calendarGrid');
-const calendarStatus = document.querySelector('#calendarStatus');
-const calendarUpdated = document.querySelector('#calendarUpdated');
-
-function formatRainfall(value) {
-  return `${value} mm`;
-}
-
-function selectScenario(value) {
-  const amount = Number(value);
-  return rainfallScenarios.find(({ range }) => amount >= range[0] && amount <= range[1]) ?? rainfallScenarios[0];
-}
-
-function renderCrops(scenario) {
-  recommendedCrops.innerHTML = '';
-
-  scenario.crops.forEach((crop) => {
-    const card = document.createElement('article');
-    card.className = 'crop-card';
-    card.innerHTML = `
-      <header>
-        <span class="range-label">Önerilen mahsul</span>
-        <h3>${crop.name}</h3>
-        <p class="sowing-window">Ekim zamanı: ${crop.sowing}</p>
-      </header>
-      <ul>
-        <li><strong>Tohum:</strong> ${crop.seed}</li>
-        <li><strong>Gübre:</strong> ${crop.fertilizer}</li>
-        <li><strong>İpucu:</strong> ${crop.tip}</li>
-      </ul>
-      <footer>Yağış aralığı: ${scenario.title}</footer>
-    `;
-    recommendedCrops.appendChild(card);
-  });
-}
-
-function updateScenario() {
-  const value = Number(rainfallInput.value);
-  rainfallValue.textContent = formatRainfall(value);
-  const scenario = selectScenario(value);
-  scenarioTitle.textContent = scenario.title;
-  scenarioDescription.textContent = scenario.description;
-  renderCrops(scenario);
-}
-
-function renderRainfallChart() {
-  const max = Math.max(...monthlyRainfall.map((item) => item.amount));
-  monthlyRainfall.forEach((item) => {
-    const bar = document.createElement('div');
-    bar.className = 'rainfall-bar';
-    bar.style.height = `${(item.amount / max) * 100}%`;
-    bar.dataset.amount = item.amount;
-
-    const label = document.createElement('span');
-    label.textContent = item.month;
-    bar.appendChild(label);
-
-    rainfallBars.appendChild(bar);
-  });
-}
-
-rainfallInput.addEventListener('input', updateScenario);
-renderRainfallChart();
-updateScenario();
-
-function getAdvisory(amount) {
-  if (amount < 1) {
-    return {
-      label: 'Uygun',
-      description: 'Toprak hazırlığı, gübreleme ve ekim için elverişli.',
-      tone: 'good'
-    };
-  }
-
-  if (amount < 5) {
-    return {
-      label: 'Hafif yağış',
-      description: 'Toprak nemi artar. Ekipman hazırlığı yap, ekimi yağış durunca başlat.',
-      tone: 'caution'
-    };
-  }
-
+const slots = Array.from({ length: 10 }, (_, index) => {
+  const id = index + 1;
   return {
-    label: 'Yoğun yağış',
-    description: 'Tarlaya girme. Yüzey akışını azaltmak için drenaj kanallarını kontrol et.',
-    tone: 'wet'
+    id,
+    label: `A${id}`,
+    reserved: RESERVED_IDS.includes(id),
+    occupied: RESERVED_IDS.includes(id),
+    timerEndsAt: null,
+    timers: { notify: null, release: null }
   };
+});
+
+function formatTimeRemaining(slot) {
+  if (!slot.timerEndsAt) return '---';
+  const msLeft = Math.max(slot.timerEndsAt - Date.now(), 0);
+  const minutes = Math.floor(msLeft / 60000);
+  const seconds = Math.floor((msLeft % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-function renderCalendar(days, precipitation) {
-  if (!calendarGrid) return;
+function addNotification(message) {
+  const entry = document.createElement('article');
+  entry.className = 'notification-item';
+  const timestamp = new Intl.DateTimeFormat('tr-TR', {
+    timeStyle: 'short',
+    hour12: false
+  }).format(new Date());
+  entry.innerHTML = `
+    <header>
+      <span class="dot"></span>
+      <p>${timestamp}</p>
+    </header>
+    <p>${message}</p>
+  `;
+  notificationList.prepend(entry);
+  metricNotifications.textContent = notificationList.childElementCount;
+}
 
-  calendarGrid.innerHTML = '';
+function clearTimers(slot) {
+  if (slot.timers.notify) {
+    clearTimeout(slot.timers.notify);
+    slot.timers.notify = null;
+  }
+  if (slot.timers.release) {
+    clearTimeout(slot.timers.release);
+    slot.timers.release = null;
+  }
+  slot.timerEndsAt = null;
+}
 
-  const dateFormatter = new Intl.DateTimeFormat('tr-TR', { month: 'short', day: 'numeric' });
-  const weekdayFormatter = new Intl.DateTimeFormat('tr-TR', { weekday: 'short' });
+function scheduleTimers(slot) {
+  clearTimers(slot);
+  const now = Date.now();
+  slot.timerEndsAt = now + PARK_DURATION_MS;
 
-  days.forEach((day, index) => {
-    const amount = Number(precipitation[index] ?? 0);
-    const advisory = getAdvisory(amount);
-    const date = new Date(day);
+  slot.timers.notify = setTimeout(() => {
+    addNotification(`${slot.label} alanındaki aracın süresi 1 dakika sonra doluyor (telefon bildirimi).`);
+  }, NOTIFY_MS);
+
+  slot.timers.release = setTimeout(() => {
+    releaseSlot(slot.id, true);
+  }, PARK_DURATION_MS);
+}
+
+function renderSlots() {
+  slotGrid.innerHTML = '';
+
+  slots.forEach((slot) => {
     const card = document.createElement('article');
-    card.className = `calendar-day calendar-${advisory.tone}`;
+    card.className = `slot-card ${slot.reserved ? 'slot-reserved' : slot.occupied ? 'slot-busy' : 'slot-free'}`;
     card.innerHTML = `
       <header>
-        <p class="calendar-weekday">${weekdayFormatter.format(date)}</p>
-        <h3>${dateFormatter.format(date)}</h3>
+        <p class="slot-label">${slot.label}</p>
+        <span class="slot-chip">${slot.reserved ? 'Rezerveli' : slot.occupied ? 'Dolu' : 'Boş'}</span>
       </header>
-      <p class="calendar-rain">${amount.toFixed(1)}&nbsp;mm</p>
-      <p class="calendar-advice">${advisory.description}</p>
-      <span class="calendar-pill">${advisory.label}</span>
+      <p class="slot-status">${slot.reserved ? 'Engelli / dükkan alanı' : slot.occupied ? 'Araç algılandı' : 'Araç bekleniyor'}</p>
+      <p class="slot-timer">Süre: ${formatTimeRemaining(slot)}</p>
     `;
-    calendarGrid.appendChild(card);
+    slotGrid.appendChild(card);
   });
-
-  calendarGrid.setAttribute('aria-busy', 'false');
 }
 
-async function loadCalendar() {
-  if (!calendarGrid || !calendarStatus) return;
+function updateSelectOptions() {
+  slotSelect.innerHTML = '';
+  slots.forEach((slot) => {
+    const option = document.createElement('option');
+    option.value = slot.id;
+    option.textContent = `${slot.label} ${slot.reserved ? '(Rezerveli)' : slot.occupied ? '(Dolu)' : '(Boş)'}`;
+    slotSelect.appendChild(option);
+  });
+}
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+function updateMetrics() {
+  metricTotal.textContent = slots.length;
+  const freeCount = slots.filter((slot) => !slot.occupied).length;
+  metricFree.textContent = freeCount;
+}
 
-  try {
-    const url =
-      'https://api.open-meteo.com/v1/forecast?latitude=38.07&longitude=30.16&daily=precipitation_sum&forecast_days=14&timezone=Europe%2FIstanbul';
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const days = data?.daily?.time;
-    const precipitation = data?.daily?.precipitation_sum;
-
-    if (!Array.isArray(days) || !Array.isArray(precipitation) || days.length === 0) {
-      throw new Error('Eksik veri');
-    }
-
-    renderCalendar(days, precipitation);
-
-    const workableDays = precipitation.filter((amount) => Number(amount ?? 0) < 1).length;
-    const cautionDays = precipitation.filter((amount) => Number(amount ?? 0) >= 1 && Number(amount ?? 0) < 5).length;
-    const wetDays = precipitation.length - workableDays - cautionDays;
-
-    calendarStatus.textContent = `Önümüzdeki ${precipitation.length} günün ${workableDays} günü tarlaya girmek için elverişli görünüyor. ${cautionDays} günde hafif yağış, ${wetDays} günde kuvvetli yağış bekleniyor.`;
-
-    if (calendarUpdated) {
-      const now = new Date();
-      calendarUpdated.dateTime = now.toISOString();
-      calendarUpdated.textContent = new Intl.DateTimeFormat('tr-TR', {
-        dateStyle: 'long',
-        timeStyle: 'short'
-      }).format(now);
-    }
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      calendarStatus.textContent = 'Meteoroloji verisi zaman aşımına uğradı. İnternet bağlantınızı kontrol edin.';
-    } else {
-      calendarStatus.textContent = 'Meteoroloji verisi alınamadı. Lütfen daha sonra tekrar deneyin.';
-    }
-
-    calendarGrid.innerHTML = '<p class="calendar-empty">Çevrimdışı modda varsayılan planlara devam edebilirsin.</p>';
-    calendarGrid.setAttribute('aria-busy', 'false');
-  } finally {
-    clearTimeout(timeout);
+function occupySlot(slotId) {
+  const slot = slots.find((item) => item.id === slotId);
+  if (!slot) return;
+  if (slot.reserved) {
+    addNotification(`${slot.label} rezerveli bir alan; ziyaretçi araç kabul edilmez.`);
+    return;
   }
+  if (slot.occupied) {
+    addNotification(`${slot.label} zaten dolu.`);
+    return;
+  }
+  slot.occupied = true;
+  scheduleTimers(slot);
+  addNotification(`${slot.label} alanına araç girişi yapıldı. Zamanlayıcı başlatıldı.`);
+  updateUI();
 }
 
-loadCalendar();
+function releaseSlot(slotId, auto = false) {
+  const slot = slots.find((item) => item.id === slotId);
+  if (!slot || slot.reserved) return;
+  if (!slot.occupied) {
+    if (!auto) addNotification(`${slot.label} zaten boş.`);
+    return;
+  }
+  slot.occupied = false;
+  clearTimers(slot);
+  addNotification(`${slot.label} ${auto ? '5 dakikanın sonunda otomatik olarak boşaltıldı.' : 'alanından araç çıkışı yapıldı.'}`);
+  updateUI();
+}
+
+function handleEnter() {
+  const slotId = Number(slotSelect.value);
+  occupySlot(slotId);
+}
+
+function handleExit() {
+  const slotId = Number(slotSelect.value);
+  releaseSlot(slotId);
+}
+
+function updateUI() {
+  updateMetrics();
+  updateSelectOptions();
+  renderSlots();
+}
+
+function tickTimers() {
+  renderSlots();
+  requestAnimationFrame(tickTimers);
+}
+
+function init() {
+  enterButton.addEventListener('click', handleEnter);
+  exitButton.addEventListener('click', handleExit);
+  updateUI();
+  tickTimers();
+}
+
+init();

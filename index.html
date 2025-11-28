@@ -3,200 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dinar Tarla Planlama Rehberi</title>
-  <meta name="description" content="Dinar ve Göller Bölgesi çiftçileri için yıllık yağış miktarına göre mahsul seçimi, ekim takvimi ve gübre önerileri.">
+  <title>Arduino Otopark Simülatörü</title>
+  <meta name="description" content="10 araçlık, Arduino sensörleriyle çalışan ve rezerveli alanları bulunan akıllı otopark simülasyonu.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="page">
     <header class="hero" role="banner">
-      <div class="hero-content">
-        <p class="hero-eyebrow">Göller Bölgesi Tarım Rehberi</p>
-        <h1>Dinar'da yağışa göre <span class="highlight">ekim planı</span> oluştur.</h1>
-        <p class="hero-lead">Kuru koşullardan daha nemli yıllara kadar farklı yağış senaryolarına göre hangi mahsulün hangi dönemde ve ne kadar tohumla ekileceğini keşfet.</p>
-        <dl class="hero-metrics" aria-label="Dinar iklim özeti">
+      <div class="hero-copy">
+        <p class="eyebrow">Arduino tabanlı park kontrolü</p>
+        <h1>10 araçlık <span class="highlight">akıllı otopark</span> paneli</h1>
+        <p class="lede">Her araç girişi 5 dakikalık park süresi başlatır, sürenin bitimine 1 dakika kala telefon bildirimi simüle edilir. 3 alan daima kırmızı ve rezervelidir.</p>
+        <div class="hero-metrics" aria-label="Alan özeti">
           <div>
-            <dt>Rakım</dt>
-            <dd>880&nbsp;m</dd>
+            <p class="metric-label">Toplam Alan</p>
+            <p class="metric-value" id="metricTotal">10</p>
           </div>
           <div>
-            <dt>Ortalama yağış</dt>
-            <dd>480&nbsp;mm / yıl</dd>
+            <p class="metric-label">Boş Alan</p>
+            <p class="metric-value" id="metricFree">7</p>
           </div>
           <div>
-            <dt>Toprak</dt>
-            <dd>Killi-tınlı</dd>
+            <p class="metric-label">Bildirimler</p>
+            <p class="metric-value" id="metricNotifications">0</p>
           </div>
-        </dl>
+        </div>
       </div>
-      <aside class="hero-panel" aria-label="Yağış senaryosu">
+      <div class="hero-panel" aria-label="Manuel kontrol">
         <div class="panel-header">
-          <span class="panel-badge">Canlı araç</span>
-          <p>Yıllık yağışı seç, önerilen ürün listesini hemen gör.</p>
+          <span class="badge">Canlı simülasyon</span>
+          <p class="panel-subtitle">Arduino sensörü yerine elle tetikleyerek alanları test et.</p>
         </div>
         <div class="panel-body">
-          <label for="rainfallInput">Yıllık yağış (mm)</label>
-          <div class="slider-display">
-            <input id="rainfallInput" type="range" min="280" max="620" value="480" step="10" aria-describedby="rainfallHint">
-            <output id="rainfallValue" for="rainfallInput">480 mm</output>
+          <label for="slotSelect">Alan seç</label>
+          <select id="slotSelect" aria-label="Alan seçimi"></select>
+          <div class="panel-actions">
+            <button id="enterButton" class="btn primary">Araç girişi</button>
+            <button id="exitButton" class="btn ghost">Araç çıkışı</button>
           </div>
-          <p id="rainfallHint" class="panel-hint">Kaydırıcıyı hareket ettirerek kurak, normal veya yağışlı yılları simüle edebilirsin.</p>
-          <div class="panel-summary">
-            <h3 id="scenarioTitle">Orta nemli yıl</h3>
-            <p id="scenarioDescription">Ekmeklik buğday, yulaf ve yem bezelyesi yağışlı kışlardan iyi yararlanır. Sulu alanlarda kanola ekimi yapılabilir.</p>
-          </div>
+          <p class="panel-hint">Kırmızı alanlar araç algılandığını, yeşil alanlar boş olduğunu gösterir. Rezerveli alanlar her zaman kırmızıdır.</p>
         </div>
-      </aside>
+      </div>
     </header>
 
     <main>
-      <section id="planner" class="planner" aria-labelledby="plannerTitle">
-        <header class="section-intro">
-          <h2 id="plannerTitle">Yağışa göre mahsul önerileri</h2>
-          <p>Yağış aralığına göre en dayanıklı türler, ekim zamanları ve tohum-gübre miktarlarını aşağıda bulabilirsin. Listeler senaryoya göre güncellenir.</p>
-        </header>
-        <div id="recommendedCrops" class="crop-grid" aria-live="polite"></div>
-      </section>
-
-      <section class="guides" aria-labelledby="guideTitle">
-        <header class="section-intro">
-          <h2 id="guideTitle">Başlıca ürün rehberleri</h2>
-          <p>Dinar çevresinde yaygın olarak yetiştirilen buğday, arpa ve karabuğday için ekim penceresi, tohum ve gübreleme özetleri.</p>
-        </header>
-        <div class="guide-grid">
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Kışlık tahıl</p>
-              <h3>Buğday</h3>
-              <p class="crop-window">Ekim &ndash; Kasım</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>18&ndash;20&nbsp;kg/da (kuru), 16&ndash;18&nbsp;kg/da (sulu)</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>20&ndash;25&nbsp;kg/da 20-20-0 veya 15-15-15</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Sapa kalkmadan önce 8&ndash;10&nbsp;kg/da üre veya 12&ndash;15&nbsp;kg/da amonyum nitrat</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Toprak 5&ndash;6&nbsp;°C'ye düştüğünde ekim yapılır. Anıza ekim, nemi koruyarak çıkışı hızlandırır.</p>
-          </article>
-
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Kışlık tahıl</p>
-              <h3>Arpa</h3>
-              <p class="crop-window">Ekim başı &ndash; Kasım başı</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>18&ndash;22&nbsp;kg/da (yemlik), 16&ndash;18&nbsp;kg/da (maltlık)</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>18&ndash;20&nbsp;kg/da 20-20-0</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Şubat sonu &ndash; mart başı 8&ndash;10&nbsp;kg/da amonyum sülfat veya nitrat</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Erken ekim kardeşlenmeyi artırır, yaz kuraklığına karşı verimi korur.</p>
-          </article>
-
-          <article class="guide-card">
-            <header>
-              <p class="crop-type">Yazlık alternatif</p>
-              <h3>Karabuğday</h3>
-              <p class="crop-window">Mayıs başı &ndash; Haziran ortası</p>
-            </header>
-            <dl>
-              <div>
-                <dt>Tohum</dt>
-                <dd>Sıraya ekimde 4&ndash;5&nbsp;kg/da, serpmede 6&ndash;7&nbsp;kg/da</dd>
-              </div>
-              <div>
-                <dt>Taban gübresi</dt>
-                <dd>8&ndash;10&nbsp;kg/da 15-15-15</dd>
-              </div>
-              <div>
-                <dt>Üst gübre</dt>
-                <dd>Gerekmiyor; fazla azot yatmaya yol açar</dd>
-              </div>
-            </dl>
-            <p class="guide-note">Don tehlikesi geçtikten sonra ekim yapın, toprak 10&nbsp;°C'nin üzerinde olmalı.</p>
-          </article>
+      <section class="slots" aria-labelledby="slotsTitle">
+        <div class="section-heading">
+          <h2 id="slotsTitle">Park alanları</h2>
+          <p>Her kutu bir park alanını temsil eder. Zamanlayıcılar otomatik çalışır ve 5. dakikada alan serbest bırakılır.</p>
         </div>
+        <div id="slotGrid" class="slot-grid" aria-live="polite"></div>
       </section>
 
-      <section class="climate" aria-labelledby="climateTitle">
-        <div class="section-intro">
-          <h2 id="climateTitle">Yağış takvimi ve tarlayı hazırlama</h2>
-          <p>Kış ve ilkbahar yağışlarını toprağa depolamak için toprak işlemesini sonbahar başında tamamlayın. Yaz sonuna doğru derin sürüm, kışlık tahıllar için nem tutumunu artırır.</p>
+      <section class="notifications" aria-labelledby="notificationTitle">
+        <div class="section-heading">
+          <h2 id="notificationTitle">Bildirim akışı</h2>
+          <p>4. dakikada gönderilen telefon bildirimleri ve otomatik boşaltma kayıtları burada listelenir.</p>
         </div>
-        <div class="climate-layout">
-          <figure class="rainfall-chart" aria-label="Dinar aylık ortalama yağış grafiği">
-            <figcaption>Ortalama aylık yağış (mm)</figcaption>
-            <div id="rainfallBars" class="rainfall-bars"></div>
-          </figure>
-          <aside class="climate-notes">
-            <h3>İklime uygun yönetim</h3>
-            <ul>
-              <li>Kışlık tahıllar için anızlı veya minimum toprak işleme ile nem kaybını azalt.</li>
-              <li>Baklagilleri rotasyona ekleyerek toprağa azot kazandır, hastalık döngüsünü kır.</li>
-              <li>Geç don uyarılarını takip et; karabuğday gibi hassas türleri Mayıs ayından önce ekme.</li>
-              <li>Rüzgâr erozyonuna açık tarlalarda şeritvari ekim ve örtü bitkisi kullan.</li>
-            </ul>
-          </aside>
-        </div>
-      </section>
-
-      <section class="calendar" aria-labelledby="calendarTitle">
-        <header class="section-intro">
-          <h2 id="calendarTitle">Canlı yağış takvimi</h2>
-          <p>Dinar koordinatları için Open-Meteo verileriyle 14 günlük yağış tahmini ve tarla işleri önerileri.</p>
-          <p id="calendarStatus" class="calendar-status" role="status" aria-live="polite">Meteoroloji verisi yükleniyor…</p>
-        </header>
-        <div id="calendarGrid" class="calendar-grid" aria-live="polite" aria-busy="true"></div>
-        <footer class="calendar-legend">
-          <p><span class="legend-dot legend-good"></span> Saha çalışmasına uygun &middot; <span class="legend-dot legend-caution"></span> Hafif yağış &ndash; hazırlık yap &middot; <span class="legend-dot legend-wet"></span> Yoğun yağış &ndash; tarlaya girme</p>
-          <p class="calendar-updated">Son güncelleme: <time id="calendarUpdated" datetime="">Bekleniyor</time></p>
-        </footer>
-      </section>
-
-      <section class="rotation" aria-labelledby="rotationTitle">
-        <header class="section-intro">
-          <h2 id="rotationTitle">3 yıllık örnek rotasyon</h2>
-          <p>Toprak yorgunluğunu önlemek ve yağıştan azami fayda sağlamak için aşağıdaki döngüyü deneyin.</p>
-        </header>
-        <ol class="rotation-steps">
-          <li>
-            <h3>1. yıl &ndash; Buğday veya arpa</h3>
-            <p>Sonbaharda ekim yaparak kış yağışlarını değerlendirin. Taban gübresini toprak analizine göre ayarlayın.</p>
-          </li>
-          <li>
-            <h3>2. yıl &ndash; Nohut veya mercimek</h3>
-            <p>Baklagiller toprağa azot kazandırır. Yaz kuraklığına dayanıklı çeşitler seçin.</p>
-          </li>
-          <li>
-            <h3>3. yıl &ndash; Karabuğday veya aspir</h3>
-            <p>Alternatif yazlık ürünler yabancı ot baskısını azaltır, toprağın dinlenmesini sağlar.</p>
-          </li>
-        </ol>
+        <div id="notificationList" class="notification-list" aria-live="polite"></div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>Dinar Tarla Planlama Rehberi &middot; Göller Bölgesi çiftçileri için hazırlanmıştır.</p>
+      <p>Arduino otopark simülatörü &middot; 3 rezerveli (engelli/dükkan) alan, 7 ziyaretçi alanı.</p>
     </footer>
   </div>
 
