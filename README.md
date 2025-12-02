@@ -1,28 +1,17 @@
-# Hikâye Sahnesi
+# Kamera Destekli Öğrenci Yanıt Paneli
 
-Plotagon ve Vyond tarzı sahne düzenleme deneyimini tarayıcıya taşıyan hafif animasyon stüdyosu. Kod tabanı sadece HTML, CSS ve JavaScript ile yazıldı; ek kurulum gerektirmez.
+Sınıfta aynı kameraya bakan en fazla 5 öğrenciyi yüzlerinden kaydedip, tuttukları A4 kağıdındaki cevap metnini **Tesseract.js** ile okuyarak doğru cevapta "Yağız doğru bildin" bildirimi veren tarayıcı tabanlı demo.
 
-## Özellikler
-- 🎬 **Sahne Yönetimi:** Zaman çizelgesi, başlık ve süre kontrolü, arka plan seçimi.
-- 🧑‍🤝‍🧑 **Karakter Kütüphanesi:** Ön tanımlı karakterleri sürüklemeden tek tıkla sahneye ekleme.
-- 😃 **Duygu ve Aksiyon Kontrolleri:** Her karakter için ifade ve hareket ayarları.
-- 💬 **Senaryo Editörü:** Ton seçimiyle birlikte replik ekleme, sahne bazlı diyalog listesi.
-- 🗂️ **Storyboard Çıktısı:** Tek tıkla sahnelerin özetini oluşturan kopyalanabilir storyboard.
+## Nasıl çalışır?
+1. Depoyu indir veya aç: `index.html` dosyasını modern bir tarayıcıda aç.
+2. Tarayıcı kameraya erişim izni ister; onaylayın.
+3. **Soru** ve **doğru cevap** alanlarını doldurup kaydedin.
+4. Öğrencileri kameraya sığdırıp sırayla **Yüzü kaydet** butonuna basın (maksimum 5).
+5. Kağıdı alt şeritte gösterip **Kareyi tara** dediğinizde yüz eşleşmesi + OCR sonucu bildirim olarak görünür.
 
-## Başlangıç
-1. Depoyu indir veya klonla:
-   ```bash
-   git clone https://github.com/<kullanici-adi>/beyzadige.git
-   cd beyzadige
-   ```
-2. `index.html` dosyasını tarayıcıda aç.
-3. Yeni sahneler oluştur, karakter ve arka plan seç, diyalog ekle.
-4. "Storyboard oluştur" düğmesi ile tüm sahnelerin özetini al.
+## Teknik notlar
+- Yüz tespiti için tarayıcı `FaceDetector` API'sını kullanır; destek yoksa tüm kareyi tek yüz gibi değerlendirerek piksel farkı ile en yakın eşleşmeyi dener.
+- Cevap okuma, kareyin alt %28'lik bölümünde **Tesseract.js** (CDN) ile yapılır; Türkçe dil modeli (`tur`) kullanılır.
+- Yüz karşılaştırması karmaşık ML yerine piksel ortalama farkına göre basit bir eşleşme eşiği ile çalışır; ışık ve kadraj sabitliği önemlidir.
 
-## Geliştirme Notları
-- Tasarım koyu temalı, cam yüzeyli paneller ve neon vurgular kullanır.
-- Karakterler ve arka planlar statik listeler halinde `script.js` içinde tanımlıdır.
-- Kod, erişilebilirlik için klavye ve ekran okuyucu etiketleri ile güçlendirildi.
-- Ek modüller veya derleme adımları olmadığı için canlı düzenleme yapmak kolaydır.
-
-Keyifli animasyonlar! 🌟
+Keyifli dersler! 📸

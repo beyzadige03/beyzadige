@@ -3,72 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arduino Otopark Simülatörü</title>
-  <meta name="description" content="10 araçlık, Arduino sensörleriyle çalışan ve rezerveli alanları bulunan akıllı otopark simülasyonu.">
+  <title>Sınıf Yüz + Cevap Doğrulama Paneli</title>
+  <meta name="description" content="Kamera ile 5 öğrencinin yüz kaydı, cevap kağıdı okuma ve doğru cevapta Yağız doğru bildin bildirimi.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 </head>
 <body>
   <div class="page">
     <header class="hero" role="banner">
       <div class="hero-copy">
-        <p class="eyebrow">Arduino tabanlı park kontrolü</p>
-        <h1>10 araçlık <span class="highlight">akıllı otopark</span> paneli</h1>
-        <p class="lede">Her araç girişi 5 dakikalık park süresi başlatır, sürenin bitimine 1 dakika kala telefon bildirimi simüle edilir. 3 alan daima kırmızı ve rezervelidir.</p>
-        <div class="hero-metrics" aria-label="Alan özeti">
+        <p class="eyebrow">Canlı kamera + OCR destekli sınıf kontrolü</p>
+        <h1>5 öğrenciye kadar <span class="highlight">yüz tanıma</span> ve <span class="highlight">cevap okuma</span></h1>
+        <p class="lede">Önce öğrencilerin yüzlerini kaydedin, ardından soru ve doğru cevabı girip kameraya tuttukları A4 kağıtları otomatik okuyun. Doğru eşleşmede “Yağız doğru bildin” mesajı belirir.</p>
+        <div class="hero-metrics" aria-label="Durum özeti">
           <div>
-            <p class="metric-label">Toplam Alan</p>
-            <p class="metric-value" id="metricTotal">10</p>
+            <p class="metric-label">Kayıtlı öğrenci</p>
+            <p class="metric-value" id="metricStudentCount">0 / 5</p>
           </div>
           <div>
-            <p class="metric-label">Boş Alan</p>
-            <p class="metric-value" id="metricFree">7</p>
+            <p class="metric-label">Son okunan cevap</p>
+            <p class="metric-value" id="metricLastAnswer">—</p>
           </div>
           <div>
-            <p class="metric-label">Bildirimler</p>
-            <p class="metric-value" id="metricNotifications">0</p>
+            <p class="metric-label">Başarılı eşleşme</p>
+            <p class="metric-value" id="metricSuccess">0</p>
           </div>
         </div>
       </div>
-      <div class="hero-panel" aria-label="Manuel kontrol">
+      <div class="hero-panel" aria-label="Hızlı soru girişi">
         <div class="panel-header">
-          <span class="badge">Canlı simülasyon</span>
-          <p class="panel-subtitle">Arduino sensörü yerine elle tetikleyerek alanları test et.</p>
+          <span class="badge">Adım 1</span>
+          <p class="panel-subtitle">Soru metni ve doğru cevabı ayarlayın.</p>
         </div>
         <div class="panel-body">
-          <label for="slotSelect">Alan seç</label>
-          <select id="slotSelect" aria-label="Alan seçimi"></select>
-          <div class="panel-actions">
-            <button id="enterButton" class="btn primary">Araç girişi</button>
-            <button id="exitButton" class="btn ghost">Araç çıkışı</button>
-          </div>
-          <p class="panel-hint">Kırmızı alanlar araç algılandığını, yeşil alanlar boş olduğunu gösterir. Rezerveli alanlar her zaman kırmızıdır.</p>
+          <label for="questionInput">Soru</label>
+          <textarea id="questionInput" rows="2" placeholder="Örnek: 12 + 8 işleminin sonucu nedir?"></textarea>
+          <label for="answerInput">Doğru cevap</label>
+          <input id="answerInput" type="text" placeholder="Örnek: 20" />
+          <button id="saveQuestion" class="btn primary">Soru &amp; cevabı kaydet</button>
+          <p class="panel-hint">Soru/cevap girildikten sonra A4 kağıdı kamerada alt şerit içine konumlandırın.</p>
         </div>
       </div>
     </header>
 
     <main>
-      <section class="slots" aria-labelledby="slotsTitle">
+      <section class="camera" aria-labelledby="cameraTitle">
         <div class="section-heading">
-          <h2 id="slotsTitle">Park alanları</h2>
-          <p>Her kutu bir park alanını temsil eder. Zamanlayıcılar otomatik çalışır ve 5. dakikada alan serbest bırakılır.</p>
+          <h2 id="cameraTitle">Adım 2 · Kamera ve yüz kaydı</h2>
+          <p>Öğrencileri kameraya bakan şekilde hizalayın. Her öğrenci için "Yüzü kaydet" düğmesine basın. Maksimum 5 öğrenci eklenir.</p>
         </div>
-        <div id="slotGrid" class="slot-grid" aria-live="polite"></div>
+        <div class="camera-grid">
+          <div class="video-wrapper" aria-label="Canlı kamera">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay" aria-hidden="true"></canvas>
+            <div class="answer-region" aria-hidden="true">Cevap bu şeritte okunur</div>
+            <div class="camera-actions">
+              <button id="captureFace" class="btn primary">Yüzü kaydet</button>
+              <button id="scanFrame" class="btn ghost">Kareyi tara</button>
+            </div>
+          </div>
+          <div class="panel column" aria-label="Kayıtlı öğrenciler">
+            <div class="panel-header">
+              <span class="badge">Adım 3</span>
+              <p class="panel-subtitle">Öğrenci listesi</p>
+            </div>
+            <div class="panel-body student-list" id="studentList"></div>
+            <p class="panel-hint">Bir yüz kaydı ilk algılanan yüz üzerinden alınır ve referans olarak saklanır.</p>
+          </div>
+        </div>
       </section>
 
       <section class="notifications" aria-labelledby="notificationTitle">
         <div class="section-heading">
-          <h2 id="notificationTitle">Bildirim akışı</h2>
-          <p>4. dakikada gönderilen telefon bildirimleri ve otomatik boşaltma kayıtları burada listelenir.</p>
+          <h2 id="notificationTitle">Canlı akış</h2>
+          <p>Her taramada tespit edilen yüzler, okunan cevaplar ve eşleşme sonuçları burada listelenir.</p>
         </div>
         <div id="notificationList" class="notification-list" aria-live="polite"></div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>Arduino otopark simülatörü &middot; 3 rezerveli (engelli/dükkan) alan, 7 ziyaretçi alanı.</p>
+      <p>Kamera erişimi tarayıcıdan istenir. FaceDetector desteklenmiyorsa sistem en yakın eşleşmeyi piksel karşılaştırması ile dener.</p>
     </footer>
   </div>
 
