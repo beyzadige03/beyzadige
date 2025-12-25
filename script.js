@@ -1,42 +1,92 @@
-const video = document.getElementById('video');
-const overlay = document.getElementById('overlay');
 const notificationList = document.getElementById('notificationList');
-const metricStudentCount = document.getElementById('metricStudentCount');
-const metricLastAnswer = document.getElementById('metricLastAnswer');
-const metricSuccess = document.getElementById('metricSuccess');
-const studentList = document.getElementById('studentList');
-const captureFaceBtn = document.getElementById('captureFace');
-const scanFrameBtn = document.getElementById('scanFrame');
-const questionInput = document.getElementById('questionInput');
-const answerInput = document.getElementById('answerInput');
-const saveQuestionBtn = document.getElementById('saveQuestion');
+const metricAvailable = document.getElementById('metricAvailable');
+const metricOccupied = document.getElementById('metricOccupied');
+const metricAlerts = document.getElementById('metricAlerts');
+const spotList = document.getElementById('spotList');
+const mapGrid = document.getElementById('mapGrid');
+const zoneSelect = document.getElementById('zoneSelect');
+const availableToggle = document.getElementById('availableToggle');
+const refreshStatusBtn = document.getElementById('refreshStatus');
 
-const MAX_STUDENTS = 5;
-const SAMPLE_SIZE = 64; // px, kare ortalama kıyaslama
-const MATCH_THRESHOLD = 28; // ortalama piksel farkı
+const ALERT_DELAY_MS = 60000;
 
 const state = {
-  question: '',
-  answer: '',
-  students: [], // { id, name, sample, thumb }
-  successCount: 0,
+  alertsSent: 0,
+  spots: [
+    {
+      id: 'GOP-01',
+      name: 'GOP Meydan',
+      zone: 'Gazi Osman Paşa',
+      type: 'Genel',
+      status: 'available',
+    },
+    {
+      id: 'GOP-02',
+      name: 'GOP Kültür Merkezi',
+      zone: 'Gazi Osman Paşa',
+      type: 'Genel',
+      status: 'occupied',
+    },
+    {
+      id: 'BL-01',
+      name: 'Bağlık Sağlık Ocağı',
+      zone: 'Bağlık',
+      type: 'Engelli',
+      status: 'reserved',
+      reservedReason: 'Engelli (sürekli dolu)',
+    },
+    {
+      id: 'BL-02',
+      name: 'Bağlık Site Girişi',
+      zone: 'Bağlık',
+      type: 'Konut Sahibi',
+      status: 'reserved',
+      reservedReason: 'Konut sahibi (sürekli dolu)',
+    },
+    {
+      id: 'CM-01',
+      name: 'Cumhuriyet Bulvarı',
+      zone: 'Cumhuriyet',
+      type: 'Ev Sahibi',
+      status: 'reserved',
+      reservedReason: 'Ev sahibi (sürekli dolu)',
+    },
+    {
+      id: 'CM-02',
+      name: 'Cumhuriyet Parkı',
+      zone: 'Cumhuriyet',
+      type: 'Genel',
+      status: 'available',
+    },
+    {
+      id: 'CM-03',
+      name: 'Cumhuriyet Hastane',
+      zone: 'Cumhuriyet',
+      type: 'Genel',
+      status: 'occupied',
+    },
+    {
+      id: 'GOP-03',
+      name: 'GOP Spor Salonu',
+      zone: 'Gazi Osman Paşa',
+      type: 'Genel',
+      status: 'available',
+    },
+  ],
+  timers: new Map(),
 };
 
-const faceDetector = 'FaceDetector' in window ? new window.FaceDetector({ fastMode: true }) : null;
-const canvas = overlay;
-const ctx = canvas.getContext('2d');
-const processCanvas = document.createElement('canvas');
-const processCtx = processCanvas.getContext('2d');
-let stream = null;
-let nextId = 1;
+function formatTime(date) {
+  return new Intl.DateTimeFormat('tr-TR', {
+    timeStyle: 'short',
+    hour12: false,
+  }).format(date);
+}
 
 function addNotification(message, type = 'info') {
   const entry = document.createElement('article');
   entry.className = `notification-item ${type === 'success' ? 'success' : type === 'warn' ? 'warn' : type === 'danger' ? 'danger' : ''}`;
-  const timestamp = new Intl.DateTimeFormat('tr-TR', {
-    timeStyle: 'short',
-    hour12: false,
-  }).format(new Date());
+  const timestamp = formatTime(new Date());
   entry.innerHTML = `
     <header>
       <span class="dot"></span>
@@ -47,255 +97,147 @@ function addNotification(message, type = 'info') {
   notificationList.prepend(entry);
 }
 
-function updateMetrics(lastAnswerText = null) {
-  metricStudentCount.textContent = `${state.students.length} / ${MAX_STUDENTS}`;
-  if (lastAnswerText !== null) {
-    metricLastAnswer.textContent = lastAnswerText || '—';
-  }
-  metricSuccess.textContent = state.successCount;
+function updateMetrics() {
+  const availableCount = state.spots.filter((spot) => spot.status === 'available').length;
+  const occupiedCount = state.spots.filter((spot) => spot.status !== 'available').length;
+  metricAvailable.textContent = availableCount;
+  metricOccupied.textContent = occupiedCount;
+  metricAlerts.textContent = state.alertsSent;
 }
 
-function renderStudents() {
-  studentList.innerHTML = '';
-  if (!state.students.length) {
-    studentList.innerHTML = '<p style="color: var(--text-muted); margin: 0;">Henüz kayıt yok. Kameraya bakan öğrenciyi hizalayın ve "Yüzü kaydet"e basın.</p>';
+function getFilteredSpots() {
+  const selectedZone = zoneSelect.value;
+  return state.spots.filter((spot) => {
+    const zoneMatch = selectedZone === 'all' || spot.zone === selectedZone;
+    const availabilityMatch = !availableToggle.checked || spot.status === 'available';
+    return zoneMatch && availabilityMatch;
+  });
+}
+
+function renderMap() {
+  mapGrid.innerHTML = '';
+  getFilteredSpots().forEach((spot) => {
+    const tile = document.createElement('div');
+    tile.className = 'map-tile';
+    const statusClass = spot.status === 'available' ? 'available' : spot.status === 'reserved' ? 'reserved' : 'occupied';
+    tile.innerHTML = `
+      <header>
+        <strong>${spot.id}</strong>
+        <span class="map-dot ${statusClass}"></span>
+      </header>
+      <p>${spot.name}</p>
+      <p>${spot.zone}</p>
+    `;
+    mapGrid.appendChild(tile);
+  });
+}
+
+function renderSpots() {
+  spotList.innerHTML = '';
+  const filteredSpots = getFilteredSpots();
+
+  if (!filteredSpots.length) {
+    spotList.innerHTML = '<p class="panel-hint">Bu filtrelere uygun park alanı bulunamadı.</p>';
     return;
   }
 
-  state.students.forEach((student) => {
-    const card = document.createElement('div');
-    card.className = 'student-card';
+  filteredSpots.forEach((spot) => {
+    const card = document.createElement('article');
+    card.className = 'spot-card';
+    const statusText = spot.status === 'available' ? 'Boş' : spot.status === 'reserved' ? 'Sürekli dolu' : 'Dolu';
+    const statusClass = spot.status === 'available' ? '' : spot.status === 'reserved' ? 'reserved' : 'occupied';
+    const tagClass = spot.status === 'reserved' ? 'tag reserved' : 'tag';
+    const parkedInfo = spot.parkedAt ? `Park edildi: ${formatTime(new Date(spot.parkedAt))}` : 'Sensör aktif';
+
     card.innerHTML = `
-      <img src="${student.thumb}" alt="${student.name} yüz kaydı" />
-      <div>
-        <p>${student.name}</p>
-        <span>ID: ${student.id}</span>
+      <header>
+        <div class="spot-meta">
+          <h3>${spot.name}</h3>
+          <span class="tag ${tagClass}">${spot.type}</span>
+        </div>
+        <div class="status ${statusClass}">${statusText}</div>
+      </header>
+      <p class="spot-details">Bölge: ${spot.zone} · ${parkedInfo}</p>
+      ${spot.status === 'reserved' ? `<p class="spot-details">${spot.reservedReason}</p>` : ''}
+      <div class="spot-actions">
+        ${spot.status === 'available' ? `<button class="btn small primary" data-action="park" data-id="${spot.id}">Park et</button>` : ''}
+        ${spot.status === 'occupied' ? `<button class="btn small danger" data-action="release" data-id="${spot.id}">Çıkış yap</button>` : ''}
       </div>
     `;
-    studentList.appendChild(card);
+
+    spotList.appendChild(card);
   });
 }
 
-function drawBoxes(detections) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'rgba(91, 140, 253, 0.9)';
-  ctx.lineWidth = 2;
-  ctx.font = '14px Manrope';
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-
-  detections.forEach((det, index) => {
-    const { width, height, top, left } = det.boundingBox;
-    ctx.strokeRect(left, top, width, height);
-    ctx.fillRect(left, Math.max(0, top - 22), width, 22);
-    ctx.fillStyle = '#e6f0ff';
-    ctx.fillText(`Yüz ${index + 1}`, left + 8, Math.max(14, top - 6));
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-  });
-}
-
-function grabFrame() {
-  if (!video.videoWidth || !video.videoHeight) return false;
-  processCanvas.width = video.videoWidth;
-  processCanvas.height = video.videoHeight;
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  processCtx.drawImage(video, 0, 0, processCanvas.width, processCanvas.height);
-  return true;
-}
-
-async function detectFaces() {
-  if (!faceDetector) {
-    // Fallback: tüm kareyi tek yüz gibi kabul et, en azından piksel karşılaştırması çalışır
-    return [
-      {
-        boundingBox: { top: 10, left: 10, width: canvas.width - 20, height: canvas.height * 0.55 },
-      },
-    ];
-  }
-
-  try {
-    const faces = await faceDetector.detect(video);
-    return faces;
-  } catch (error) {
-    addNotification('FaceDetector çağrısı başarısız; tüm kare taranacak.', 'warn');
-    return [
-      {
-        boundingBox: { top: 10, left: 10, width: canvas.width - 20, height: canvas.height * 0.55 },
-      },
-    ];
-  }
-}
-
-function getImageDataFromBox(box) {
-  const { top, left, width, height } = box;
-  const temp = document.createElement('canvas');
-  temp.width = SAMPLE_SIZE;
-  temp.height = SAMPLE_SIZE;
-  const tctx = temp.getContext('2d');
-  tctx.drawImage(processCanvas, left, top, width, height, 0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
-  return tctx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
-}
-
-function computeAverageDiff(dataA, dataB) {
-  if (!dataA || !dataB) return Infinity;
-  let diff = 0;
-  const len = dataA.data.length;
-  for (let i = 0; i < len; i += 4) {
-    diff +=
-      Math.abs(dataA.data[i] - dataB.data[i]) +
-      Math.abs(dataA.data[i + 1] - dataB.data[i + 1]) +
-      Math.abs(dataA.data[i + 2] - dataB.data[i + 2]);
-  }
-  return diff / (len / 4);
-}
-
-function bestMatch(sample) {
-  let best = { student: null, score: Infinity };
-  state.students.forEach((student) => {
-    const score = computeAverageDiff(sample, student.sample);
-    if (score < best.score) {
-      best = { student, score };
-    }
-  });
-  return best;
-}
-
-async function readAnswerText() {
-  if (!window.Tesseract) {
-    addNotification('Tesseract.js yüklenemedi, cevap okuma devre dışı.', 'warn');
-    return '';
-  }
-  // Alt şerit: çerçevenin alt %28'i
-  const regionHeight = Math.floor(canvas.height * 0.28);
-  const regionY = canvas.height - regionHeight;
-  const temp = document.createElement('canvas');
-  temp.width = canvas.width;
-  temp.height = regionHeight;
-  const tctx = temp.getContext('2d');
-  tctx.drawImage(processCanvas, 0, regionY, canvas.width, regionHeight, 0, 0, canvas.width, regionHeight);
-  const { data } = await Tesseract.recognize(temp, 'tur');
-  const cleaned = data.text?.trim();
-  return cleaned || '';
-}
-
-async function captureFace() {
-  if (state.students.length >= MAX_STUDENTS) {
-    addNotification('5 öğrenciye ulaşıldı. Yeni kayıt eklenemez.', 'warn');
-    return;
-  }
-
-  const hasFrame = grabFrame();
-  if (!hasFrame) {
-    addNotification('Kamera hazırlanmadı. Birkaç saniye bekleyip tekrar deneyin.', 'warn');
-    return;
-  }
-
-  const detections = await detectFaces();
-  if (!detections.length) {
-    addNotification('Karede yüz algılanmadı. Işığı artırın ve kameraya bakın.', 'danger');
-    return;
-  }
-
-  const sampleBox = detections[0].boundingBox;
-  const sample = getImageDataFromBox(sampleBox);
-  const thumbCanvas = document.createElement('canvas');
-  thumbCanvas.width = 96;
-  thumbCanvas.height = 96;
-  thumbCanvas.getContext('2d').drawImage(canvas, sampleBox.left, sampleBox.top, sampleBox.width, sampleBox.height, 0, 0, 96, 96);
-  const thumb = thumbCanvas.toDataURL('image/png');
-
-  const name = `Öğrenci ${nextId}`;
-  state.students.push({ id: nextId, name, sample, thumb });
-  nextId += 1;
-  addNotification(`${name} yüz kaydı eklendi.`, 'success');
-  renderStudents();
+function renderAll() {
+  renderMap();
+  renderSpots();
   updateMetrics();
 }
 
-async function runScan() {
-  if (!state.students.length) {
-    addNotification('Önce en az bir öğrencinin yüzünü kaydedin.', 'warn');
-    return;
-  }
-  if (!state.answer) {
-    addNotification('Soru ve doğru cevabı kaydedin.', 'warn');
-    return;
+function scheduleAlert(spot) {
+  if (state.timers.has(spot.id)) {
+    clearTimeout(state.timers.get(spot.id));
   }
 
-  const hasFrame = grabFrame();
-  if (!hasFrame) {
-    addNotification('Kamera henüz kare sağlamıyor. Lütfen akışı kontrol edin.', 'warn');
-    return;
-  }
-
-  const detections = await detectFaces();
-  drawBoxes(detections);
-  if (!detections.length) {
-    addNotification('Bu karede yüz bulunamadı.', 'warn');
-    return;
-  }
-
-  const answerText = (await readAnswerText()) || '';
-  updateMetrics(answerText);
-
-  detections.forEach((det, index) => {
-    const sample = getImageDataFromBox(det.boundingBox);
-    const { student, score } = bestMatch(sample);
-    if (!student || score > MATCH_THRESHOLD) {
-      addNotification(`Yüz ${index + 1} bilinen kayıtlarla eşleşmedi (fark: ${score.toFixed(1)}).`, 'danger');
-      return;
+  const timerId = setTimeout(() => {
+    if (spot.status === 'occupied') {
+      state.alertsSent += 1;
+      addNotification(`${spot.name} için uyarı: Aracınızı çekin, para cezası uygulanacaktır.`, 'danger');
+      updateMetrics();
     }
+  }, ALERT_DELAY_MS);
 
-    const normalizedAnswer = answerText.toLowerCase().replace(/\s+/g, '');
-    const normalizedCorrect = state.answer.toLowerCase().replace(/\s+/g, '');
+  state.timers.set(spot.id, timerId);
+}
 
-    if (normalizedAnswer && normalizedAnswer === normalizedCorrect) {
-      state.successCount += 1;
-      updateMetrics(answerText);
-      addNotification(`${student.name}: Yağız doğru bildin ✅`, 'success');
+function handleSpotAction(event) {
+  const actionBtn = event.target.closest('button[data-action]');
+  if (!actionBtn) return;
+
+  const spotId = actionBtn.dataset.id;
+  const spot = state.spots.find((entry) => entry.id === spotId);
+  if (!spot || spot.status === 'reserved') return;
+
+  if (actionBtn.dataset.action === 'park') {
+    spot.status = 'occupied';
+    spot.parkedAt = Date.now();
+    addNotification(`${spot.name} park edildi. 1 dakika sonra uyarı gönderilecek.`, 'success');
+    scheduleAlert(spot);
+  }
+
+  if (actionBtn.dataset.action === 'release') {
+    spot.status = 'available';
+    spot.parkedAt = null;
+    addNotification(`${spot.name} boşaldı.`, 'info');
+  }
+
+  renderAll();
+}
+
+function refreshSensorData() {
+  state.spots.forEach((spot) => {
+    if (spot.status === 'reserved') return;
+    const random = Math.random();
+    if (random > 0.55) {
+      spot.status = 'occupied';
+      spot.parkedAt = spot.parkedAt || Date.now();
+      scheduleAlert(spot);
     } else {
-      addNotification(`${student.name} için cevap uyuşmadı. Okunan: "${answerText || '—'}"`, 'info');
+      spot.status = 'available';
+      spot.parkedAt = null;
     }
   });
-}
-
-function saveQuestion() {
-  state.question = questionInput.value.trim();
-  state.answer = answerInput.value.trim();
-  if (!state.question || !state.answer) {
-    addNotification('Soru ve doğru cevap alanlarını doldurun.', 'warn');
-    return;
-  }
-  addNotification(`Soru kaydedildi. Doğru cevap: "${state.answer}"`, 'info');
-}
-
-function fitCanvasToVideo() {
-  const width = video.videoWidth || video.clientWidth;
-  const height = video.videoHeight || video.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
-}
-
-async function initCamera() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-    video.srcObject = stream;
-    video.addEventListener('loadedmetadata', () => {
-      fitCanvasToVideo();
-    });
-  } catch (error) {
-    addNotification('Kamera açılamadı. Tarayıcı izinlerini kontrol edin.', 'danger');
-  }
+  addNotification('Sensör verisi güncellendi.', 'info');
+  renderAll();
 }
 
 function init() {
-  initCamera();
-  window.addEventListener('resize', fitCanvasToVideo);
-  captureFaceBtn.addEventListener('click', captureFace);
-  scanFrameBtn.addEventListener('click', runScan);
-  saveQuestionBtn.addEventListener('click', saveQuestion);
-  renderStudents();
-  updateMetrics();
+  renderAll();
+  spotList.addEventListener('click', handleSpotAction);
+  zoneSelect.addEventListener('change', renderAll);
+  availableToggle.addEventListener('change', renderAll);
+  refreshStatusBtn.addEventListener('click', refreshSensorData);
 }
 
 init();
