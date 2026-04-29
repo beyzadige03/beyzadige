@@ -3,91 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Çerkezköy Belediyesi Akıllı Otopark</title>
-  <meta name="description" content="Çerkezköy Belediyesi akıllı otopark uygulaması: boş yerleri görün, park ettiğinizde 1 dakika sonra uyarı alın.">
+  <title>Prompt Eğitmeni · Daha İyi Sor, Daha İyi Cevap Al</title>
+  <meta name="description" content="Öğrenciler için oyunlaştırılmış prompt analiz arayüzü: puan al, geri bildirim gör, daha iyi prompt yazmayı öğren.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page">
-    <header class="hero" role="banner">
-      <div class="hero-copy">
-        <div class="brand">
-          <span class="brand-mark">ÇB</span>
-          <div>
-            <p class="eyebrow">Çerkezköy Belediyesi · Akıllı Otopark</p>
-            <h1>Boş park yerlerini canlı görün, <span class="highlight">1 dakika</span> sonra uyarı alın.</h1>
-          </div>
-        </div>
-        <p class="lede">Ultrasonik sensörlerden gelen veri ile park alanlarını gerçek zamanlı izleyin. Aracınızı park ettikten 1 dakika sonra "Aracınızı çekin, para cezası uygulanacaktır" bildirimi otomatik gönderilir.</p>
-        <div class="hero-metrics" aria-label="Durum özeti">
-          <div>
-            <p class="metric-label">Boş yer</p>
-            <p class="metric-value" id="metricAvailable">0</p>
-          </div>
-          <div>
-            <p class="metric-label">Dolu yer</p>
-            <p class="metric-value" id="metricOccupied">0</p>
-          </div>
-          <div>
-            <p class="metric-label">Aktif uyarı</p>
-            <p class="metric-value" id="metricAlerts">0</p>
-          </div>
-        </div>
-      </div>
-      <div class="hero-panel" aria-label="Filtreler ve kontroller">
-        <div class="panel-header">
-          <span class="badge">Canlı kontrol</span>
-          <p class="panel-subtitle">Mahalle ve durum filtrelerini kullanın.</p>
-        </div>
-        <div class="panel-body">
-          <label for="zoneSelect">Bölge seç</label>
-          <select id="zoneSelect">
-            <option value="all">Tüm bölgeler</option>
-            <option value="Gazi Osman Paşa">Gazi Osman Paşa</option>
-            <option value="Bağlık">Bağlık</option>
-            <option value="Cumhuriyet">Cumhuriyet</option>
-          </select>
-          <label class="toggle">
-            <input type="checkbox" id="availableToggle" checked />
-            <span>Sadece boş yerleri göster</span>
-          </label>
-          <button id="refreshStatus" class="btn primary">Sensör verisini yenile</button>
-          <p class="panel-hint">Engelli, konut sahibi ve ev sahibi alanları sürekli dolu görünür.</p>
-        </div>
-      </div>
+  <div class="app-shell">
+    <header class="topbar">
+      <p class="eyebrow">Prompt Coach · Öğrenci Modu</p>
+      <h1>Yapay zekâyla daha bilinçli konuşmanın eğlenceli yolu</h1>
+      <p class="subtitle">Promptunu yaz, <strong>Analiz Et</strong> butonuna bas, puanını yükselt ve seviye atla 🚀</p>
     </header>
 
-    <main>
-      <section class="map" aria-labelledby="mapTitle">
-        <div class="section-heading">
-          <h2 id="mapTitle">Canlı otopark haritası</h2>
-          <p>Renkler: yeşil boş, kırmızı dolu, mavi sürekli dolu (rezervli).</p>
+    <main class="layout">
+      <section class="panel input-panel" aria-labelledby="promptAreaTitle">
+        <div class="panel-head">
+          <h2 id="promptAreaTitle">Prompt Atölyesi</h2>
+          <span class="chip">Sıra sende ✍️</span>
         </div>
-        <div id="mapGrid" class="map-grid" aria-label="Otopark harita görünümü"></div>
+
+        <label for="categorySelect">Kategori seç (isteğe bağlı)</label>
+        <select id="categorySelect">
+          <option value="general">Genel</option>
+          <option value="story">Hikaye</option>
+          <option value="code">Kod</option>
+          <option value="explanation">Açıklama</option>
+          <option value="summary">Özet</option>
+        </select>
+
+        <label for="promptInput">Promptun</label>
+        <p class="nudge">“En son yapay zekâya ne sordun? Hadi buraya aynısını yaz da puanını görelim 👀”</p>
+        <textarea id="promptInput" rows="10" placeholder="Örn: 8. sınıf seviyesinde, fotosentezi günlük hayattan iki örnekle anlat. Sonunda 3 soruluk mini test ekle."></textarea>
+
+        <div class="actions">
+          <button id="analyzeBtn" class="btn primary">Analiz Et</button>
+          <button id="clearBtn" class="btn ghost">Temizle</button>
+        </div>
+
+        <article class="examples" aria-labelledby="exampleTitle">
+          <h3 id="exampleTitle">İyi prompt örnekleri</h3>
+          <ul>
+            <li><strong>Hikaye:</strong> "12 yaş için kısa bir bilim kurgu hikayesi yaz. Ana karakter meraklı bir öğrenci olsun, sonunda sürpriz bir ders ver."</li>
+            <li><strong>Kod:</strong> "Python ile öğrencilerin not ortalamasını hesaplayan bir fonksiyon yaz. Kodu satır satır açıkla ve örnek veriyle göster."</li>
+            <li><strong>Açıklama:</strong> "Küresel ısınmayı 6. sınıf seviyesinde, teknik terimleri sadeleştirerek ve 3 maddede anlat."</li>
+          </ul>
+        </article>
       </section>
 
-      <section class="spots" aria-labelledby="spotTitle">
-        <div class="section-heading">
-          <h2 id="spotTitle">Park alanları</h2>
-          <p>Park etmek için bir alan seçin. Parktan 1 dakika sonra uyarı gönderilir.</p>
+      <section class="panel analysis-panel" aria-live="polite" aria-labelledby="analysisTitle">
+        <div class="panel-head">
+          <h2 id="analysisTitle">Analiz & Geri Bildirim</h2>
+          <span id="scoreBadge" class="score">0 / 100</span>
         </div>
-        <div id="spotList" class="spot-list"></div>
-      </section>
 
-      <section class="notifications" aria-labelledby="notificationTitle">
-        <div class="section-heading">
-          <h2 id="notificationTitle">Bildirim akışı</h2>
-          <p>Park sonrası uyarılar ve sensör güncellemeleri burada görünür.</p>
+        <p id="scoreMessage" class="score-message">Hazırsan promptunu gönder, birlikte güçlendirelim.</p>
+
+        <div class="feedback-block">
+          <h3>Eksik / Geliştirilecek Noktalar</h3>
+          <ul id="weaknessList">
+            <li>Henüz analiz yapılmadı.</li>
+          </ul>
         </div>
-        <div id="notificationList" class="notification-list" aria-live="polite"></div>
+
+        <div class="feedback-block">
+          <h3>Daha iyi versiyon önerisi</h3>
+          <p id="suggestionText">Promptunu yazınca burada güçlendirilmiş bir sürüm önereceğim.</p>
+        </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <p>Çerkezköy Belediyesi Akıllı Şehirler Birimi · Veriler sensör simülasyonu üzerinden gösterilmektedir.</p>
+    <footer class="signature">
+      <p>Bu site Serra Tuncay & Hasan Hüseyin yapımıdır 😎 Telif hakları bizde, ama güzel prompt yazan herkes bizden 😉</p>
     </footer>
   </div>
 
