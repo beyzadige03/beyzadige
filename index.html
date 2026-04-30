@@ -3,81 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Eğitmeni · Daha İyi Sor, Daha İyi Cevap Al</title>
-  <meta name="description" content="Öğrenciler için oyunlaştırılmış prompt analiz arayüzü: puan al, geri bildirim gör, daha iyi prompt yazmayı öğren.">
+  <title>ÇERKEZKÖY BELEDİYESİ BOŞ PARK ALAN UYGULAMASI</title>
+  <meta name="description" content="Arduino maketiyle eş zamanlı çalışan park yeri doluluk takibi uygulaması.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <p class="eyebrow">Prompt Coach · Öğrenci Modu</p>
-      <h1>Yapay zekâyla daha bilinçli konuşmanın eğlenceli yolu</h1>
-      <p class="subtitle">Promptunu yaz, <strong>Analiz Et</strong> butonuna bas, puanını yükselt ve seviye atla 🚀</p>
+      <p class="eyebrow">Akıllı Park Takibi</p>
+      <h1>ÇERKEZKÖY BELEDİYESİ BOŞ PARK ALAN UYGULAMASI</h1>
+      <p class="subtitle">Yeşil = Müsait · Kırmızı = Dolu / Özel Alan</p>
     </header>
 
     <main class="layout">
-      <section class="panel input-panel" aria-labelledby="promptAreaTitle">
-        <div class="panel-head">
-          <h2 id="promptAreaTitle">Prompt Atölyesi</h2>
-          <span class="chip">Sıra sende ✍️</span>
-        </div>
-
-        <label for="categorySelect">Kategori seç (isteğe bağlı)</label>
-        <select id="categorySelect">
-          <option value="general">Genel</option>
-          <option value="story">Hikaye</option>
-          <option value="code">Kod</option>
-          <option value="explanation">Açıklama</option>
-          <option value="summary">Özet</option>
-        </select>
-
-        <label for="promptInput">Promptun</label>
-        <p class="nudge">“En son yapay zekâya ne sordun? Hadi buraya aynısını yaz da puanını görelim 👀”</p>
-        <textarea id="promptInput" rows="10" placeholder="Örn: 8. sınıf seviyesinde, fotosentezi günlük hayattan iki örnekle anlat. Sonunda 3 soruluk mini test ekle."></textarea>
-
-        <div class="actions">
-          <button id="analyzeBtn" class="btn primary">Analiz Et</button>
-          <button id="clearBtn" class="btn ghost">Temizle</button>
-        </div>
-
-        <article class="examples" aria-labelledby="exampleTitle">
-          <h3 id="exampleTitle">İyi prompt örnekleri</h3>
-          <ul>
-            <li><strong>Hikaye:</strong> "12 yaş için kısa bir bilim kurgu hikayesi yaz. Ana karakter meraklı bir öğrenci olsun, sonunda sürpriz bir ders ver."</li>
-            <li><strong>Kod:</strong> "Python ile öğrencilerin not ortalamasını hesaplayan bir fonksiyon yaz. Kodu satır satır açıkla ve örnek veriyle göster."</li>
-            <li><strong>Açıklama:</strong> "Küresel ısınmayı 6. sınıf seviyesinde, teknik terimleri sadeleştirerek ve 3 maddede anlat."</li>
-          </ul>
-        </article>
+      <section class="panel" aria-labelledby="parkTitle">
+        <h2 id="parkTitle">Park Alanları</h2>
+        <div id="parkGrid" class="park-grid"></div>
       </section>
 
-      <section class="panel analysis-panel" aria-live="polite" aria-labelledby="analysisTitle">
-        <div class="panel-head">
-          <h2 id="analysisTitle">Analiz & Geri Bildirim</h2>
-          <span id="scoreBadge" class="score">0 / 100</span>
-        </div>
-
-        <p id="scoreMessage" class="score-message">Hazırsan promptunu gönder, birlikte güçlendirelim.</p>
-
-        <div class="feedback-block">
-          <h3>Eksik / Geliştirilecek Noktalar</h3>
-          <ul id="weaknessList">
-            <li>Henüz analiz yapılmadı.</li>
-          </ul>
-        </div>
-
-        <div class="feedback-block">
-          <h3>Daha iyi versiyon önerisi</h3>
-          <p id="suggestionText">Promptunu yazınca burada güçlendirilmiş bir sürüm önereceğim.</p>
-        </div>
+      <section class="panel" aria-live="polite">
+        <h2>Sistem Durumu</h2>
+        <p id="summary">Veriler bekleniyor...</p>
+        <div id="notifications" class="notifications"></div>
       </section>
     </main>
-
-    <footer class="signature">
-      <p>Bu site Serra Tuncay & Hasan Hüseyin yapımıdır 😎 Telif hakları bizde, ama güzel prompt yazan herkes bizden 😉</p>
-    </footer>
   </div>
 
   <script src="script.js"></script>

@@ -1,100 +1,113 @@
-const promptInput = document.getElementById('promptInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const clearBtn = document.getElementById('clearBtn');
-const categorySelect = document.getElementById('categorySelect');
-const scoreBadge = document.getElementById('scoreBadge');
-const scoreMessage = document.getElementById('scoreMessage');
-const weaknessList = document.getElementById('weaknessList');
-const suggestionText = document.getElementById('suggestionText');
+const parkGrid = document.getElementById('parkGrid');
+const summary = document.getElementById('summary');
+const notifications = document.getElementById('notifications');
 
-function scorePrompt(text) {
-  const trimmed = text.trim();
-  const words = trimmed ? trimmed.split(/\s+/).length : 0;
-  let score = 0;
-  const issues = [];
+const PARK_MS = 60_000;
+const WARNING_MS = 10_000;
 
-  if (!trimmed) {
-    issues.push('Önce bir prompt yazmalısın. Boş prompta AI bile trip atar 😅');
-    return { score, issues, suggestion: '' };
+const parks = [
+  { id: 'P1', label: 'P1', type: 'normal', occupied: false, endTime: null },
+  { id: 'P2', label: 'P2', type: 'normal', occupied: false, endTime: null },
+  { id: 'P3', label: 'P3', type: 'normal', occupied: false, endTime: null },
+  { id: 'P4', label: 'P4', type: 'normal', occupied: false, endTime: null },
+  { id: 'P5', label: 'Ev Sahibi Özel', type: 'reserved', occupied: true },
+  { id: 'P6', label: 'Engelli Özel', type: 'reserved', occupied: true },
+  { id: 'P7', label: 'Dükkan Özel', type: 'reserved', occupied: true },
+  { id: 'P8', label: 'Normal', type: 'normal', occupied: false, endTime: null },
+];
+
+function notify(msg) {
+  const box = document.createElement('div');
+  box.className = 'note';
+  box.textContent = msg;
+  notifications.prepend(box);
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(msg);
   }
-
-  if (words >= 12) score += 25;
-  else issues.push('Prompt biraz kısa. En az 12+ kelime ile niyetini açmayı dene.');
-
-  const intentWords = ['anlat', 'yaz', 'oluştur', 'açıkla', 'karşılaştır', 'listele', 'özetle', 'kod'];
-  if (intentWords.some((w) => trimmed.toLowerCase().includes(w))) score += 20;
-  else issues.push('Amaç net değil. Ne istediğini fiille belirt: “açıkla”, “listele”, “kodla” gibi.');
-
-  if (/[0-9]/.test(trimmed) || ['madde', 'adım', 'örnek'].some((w) => trimmed.toLowerCase().includes(w))) {
-    score += 20;
-  } else {
-    issues.push('Detay seviyesi düşük. Sayı, adım, örnek veya format beklentisi ekleyebilirsin.');
-  }
-
-  if (['seviyesinde', 'öğrenci', 'çocuk', 'başlangıç'].some((w) => trimmed.toLowerCase().includes(w))) {
-    score += 15;
-  } else {
-    issues.push('Hedef kitle/ton yok. Kime göre anlatılacağını yazarsan sonuç çok iyileşir.');
-  }
-
-  if (['kısa', 'uzun', 'tablo', 'başlık', 'json', 'markdown'].some((w) => trimmed.toLowerCase().includes(w))) {
-    score += 20;
-  } else {
-    issues.push('Çıktı formatı belirsiz. “3 madde”, “tablo”, “kısa özet” gibi format ekle.');
-  }
-
-  return { score: Math.min(score, 100), issues, suggestion: buildSuggestion(trimmed) };
 }
 
-function buildSuggestion(text) {
-  const categoryHints = {
-    general: 'konuyu açık ve ölçülebilir şekilde işle',
-    story: 'karakter, ortam ve duygu tonunu belirt',
-    code: 'dil, giriş/çıkış ve örnek kullanım ekle',
-    explanation: 'seviyeyi sade tutup örneklerle güçlendir',
-    summary: 'özet uzunluğunu ve madde sayısını net yaz',
-  };
-
-  const selected = categorySelect.value;
-  const hint = categoryHints[selected] || categoryHints.general;
-
-  return `Aşağıdaki görevi yerine getir: "${text}". Lütfen ${hint}. Çıktıyı 4 maddede ver, her madde en fazla 2 cümle olsun ve sonunda kısa bir kontrol sorusu ekle.`;
+function formatSeconds(ms) {
+  return Math.max(0, Math.ceil(ms / 1000));
 }
 
-function renderResult(result) {
-  scoreBadge.textContent = `${result.score} / 100`;
+function render() {
+  parkGrid.innerHTML = '';
+  const normalParks = parks.filter((p) => p.type === 'normal');
+  const empty = normalParks.filter((p) => !p.occupied).length;
 
-  if (result.score >= 85) {
-    scoreMessage.textContent = 'Harika! Bu prompt baya güçlü. Bir üst seviye için daha net kısıt ekleyebilirsin 🏆';
-  } else if (result.score >= 60) {
-    scoreMessage.textContent = 'İyi gidiyorsun! Birkaç dokunuşla çok daha iyi cevap alırsın 💪';
-  } else {
-    scoreMessage.textContent = 'Gelişim modu açık! Eksikleri tamamla, puanın hızla artar 🎯';
-  }
+  parks.forEach((park) => {
+    const card = document.createElement('article');
+    card.className = `slot ${park.occupied ? 'occupied' : 'free'} ${park.type === 'reserved' ? 'reserved' : ''}`;
 
-  weaknessList.innerHTML = '';
-  if (!result.issues.length) {
-    weaknessList.innerHTML = '<li>Eksik görünmüyor. Promptun net ve güçlü ✅</li>';
-  } else {
-    result.issues.forEach((issue) => {
-      const li = document.createElement('li');
-      li.textContent = issue;
-      weaknessList.appendChild(li);
-    });
-  }
+    const now = Date.now();
+    const remaining = park.endTime ? park.endTime - now : 0;
+    const warning = park.occupied && park.type === 'normal' && remaining <= WARNING_MS;
 
-  suggestionText.textContent = result.suggestion || 'Öneri oluşturmak için bir prompt yazmalısın.';
+    card.innerHTML = `
+      <h3>${park.label}</h3>
+      <p>${park.type === 'reserved' ? 'Özel Yer (Sürekli Kırmızı)' : park.occupied ? 'Dolu' : 'Müsait'}</p>
+      <p class="timer">${park.occupied && park.type === 'normal' ? `Kalan: ${formatSeconds(remaining)} sn` : '---'}</p>
+    `;
+
+    if (park.type === 'normal') {
+      const button = document.createElement('button');
+      button.className = 'btn';
+      button.textContent = park.occupied ? 'Araç Çıkışı' : 'Araç Girişi (Arduino)';
+      button.addEventListener('click', () => toggleParking(park.id));
+      card.appendChild(button);
+    }
+
+    if (warning) card.classList.add('warning');
+    parkGrid.appendChild(card);
+  });
+
+  summary.textContent = `Normal alanlarda ${empty} boş / ${normalParks.length} toplam yer var.`;
 }
 
-analyzeBtn.addEventListener('click', () => {
-  const result = scorePrompt(promptInput.value);
-  renderResult(result);
-});
+function toggleParking(id) {
+  const park = parks.find((p) => p.id === id);
+  if (!park || park.type === 'reserved') return;
 
-clearBtn.addEventListener('click', () => {
-  promptInput.value = '';
-  scoreBadge.textContent = '0 / 100';
-  scoreMessage.textContent = 'Hazırsan promptunu gönder, birlikte güçlendirelim.';
-  weaknessList.innerHTML = '<li>Henüz analiz yapılmadı.</li>';
-  suggestionText.textContent = 'Promptunu yazınca burada güçlendirilmiş bir sürüm önereceğim.';
-});
+  if (!park.occupied) {
+    park.occupied = true;
+    park.endTime = Date.now() + PARK_MS;
+    notify(`${park.label}: Araç park etti. Süre başladı (60 sn).`);
+  } else {
+    park.occupied = false;
+    park.endTime = null;
+    notify(`${park.label}: Araç çıktı, yer tekrar yeşil (müsait).`);
+  }
+
+  render();
+}
+
+function tick() {
+  const now = Date.now();
+
+  parks.forEach((park) => {
+    if (park.type !== 'normal' || !park.occupied || !park.endTime) return;
+
+    const remaining = park.endTime - now;
+    if (remaining <= WARNING_MS && !park.warned) {
+      park.warned = true;
+      notify(`${park.label}: Son 10 saniye! Aracınızı çekin yoksa park cezası alacaksınız.`);
+    }
+
+    if (remaining <= 0) {
+      park.occupied = false;
+      park.endTime = null;
+      park.warned = false;
+      notify(`${park.label}: Süre doldu, yer otomatik boşaltıldı.`);
+    }
+  });
+
+  render();
+}
+
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+render();
+setInterval(tick, 1000);
